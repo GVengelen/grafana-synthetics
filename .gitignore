@@ -1,0 +1,6 @@
+# Ignore secrets and Terraform state
+secrets.auto.tfvars
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
