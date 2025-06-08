@@ -1,5 +1,5 @@
-resource "grafana_synthetic_monitoring_check" "Schiphol_BrowserCheck_homepage" {
-  job       = "Schiphol:BrowserCheck"
+resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_homepage" {
+  job       = "Synthetics:BrowserCheck"
   target    = "homepage"
   enabled   = true
   probes    = [1]
@@ -8,12 +8,12 @@ resource "grafana_synthetic_monitoring_check" "Schiphol_BrowserCheck_homepage" {
   timeout   = 60000
   settings {
     browser {
-      script = file("${path.module}/../scripts/schiphol_homepage.js")
+      script = file("${path.module}/../scripts/script.js")
     }
   }
 }
-resource "grafana_synthetic_monitoring_check" "Schiphol_BrowserCheck_homepage2" {
-  job       = "Schiphol:BrowserCheck2"
+resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_homepage2" {
+  job       = "Synthetics:BrowserCheck2"
   target    = "homepage"
   enabled   = true
   probes    = [1]
@@ -22,7 +22,7 @@ resource "grafana_synthetic_monitoring_check" "Schiphol_BrowserCheck_homepage2" 
   timeout   = 60000
   settings {
     browser {
-      script = file("${path.module}/../scripts/schiphol_homepage.js")
+      script = file("${path.module}/../scripts/script.js")
     }
   }
 }
