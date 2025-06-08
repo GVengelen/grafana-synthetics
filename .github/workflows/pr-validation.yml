@@ -1,0 +1,63 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-scripts:
+    runs-on: ubuntu-latest
+    name: Validate K6 Scripts
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - uses: grafana/setup-k6-action@v1
+        with:
+          browser: true
+
+      - uses: grafana/run-k6-action@v1
+        with:
+          path: |
+            ./scripts/*.js
+
+
+  terraform-plan:
+    runs-on: ubuntu-latest
+    name: Terraform Plan
+    needs: validate-scripts
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.0"
+          
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./main
+        
+      - name: Create terraform.tfvars
+        run: |
+          cat > main/terraform.tfvars << EOF
+          grafana_service_token = "${{ secrets.GRAFANA_SERVICE_TOKEN }}"
+          sm_access_token = "${{ secrets.SM_ACCESS_TOKEN }}"
+          EOF
+        
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ./main
+        
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: ./main
+        env:
+          TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}

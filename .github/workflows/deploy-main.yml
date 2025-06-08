@@ -1,0 +1,63 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  run-scripts:
+    runs-on: ubuntu-latest
+    name: Execute K6 Scripts
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run K6 Scripts
+        uses: grafana/run-k6-action@v1
+        with:
+          path: |
+            ./scripts/*.js
+
+  terraform-apply:
+    runs-on: ubuntu-latest
+    name: Apply Terraform Changes
+    needs: run-scripts
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.0"
+          
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./main
+        
+      - name: Create terraform.tfvars
+        run: |
+          cat > main/terraform.tfvars << EOF
+          grafana_service_token = "${{ secrets.GRAFANA_SERVICE_TOKEN }}"
+          sm_access_token = "${{ secrets.SM_ACCESS_TOKEN }}"
+          EOF
+        
+      - name: Terraform Plan
+        run: terraform plan -no-color -out=tfplan
+        working-directory: ./main
+        env:
+          TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}
+          
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: ./main
+        env:
+          TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}
+          
+      - name: Clean up terraform.tfvars
+        if: always()
+        run: rm -f main/terraform.tfvars
