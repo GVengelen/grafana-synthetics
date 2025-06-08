@@ -18,9 +18,6 @@ jobs:
         with:
           path: |
             ./scripts/*.js
-        env:
-          GRAFANA_SERVICE_TOKEN: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
-          SM_ACCESS_TOKEN: ${{ secrets.SM_ACCESS_TOKEN }}
 
   terraform-apply:
     runs-on: ubuntu-latest
