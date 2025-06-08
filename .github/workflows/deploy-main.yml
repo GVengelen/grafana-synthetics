@@ -13,14 +13,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - uses: grafana/setup-k6-action@v1
-        with:
-          browser: true
-
-      - uses: grafana/run-k6-action@v1
+      - name: Run K6 Scripts
+        uses: grafana/run-k6-action@v1
         with:
           path: |
             ./scripts/*.js
+        env:
+          GRAFANA_SERVICE_TOKEN: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          SM_ACCESS_TOKEN: ${{ secrets.SM_ACCESS_TOKEN }}
 
   terraform-apply:
     runs-on: ubuntu-latest
