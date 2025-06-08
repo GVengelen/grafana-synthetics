@@ -13,30 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Validate K6 scripts syntax
-        run: |
-          for script in scripts/*.js; do
-            if [ -f "$script" ]; then
-              echo "Validating $script..."
-              docker run --rm -v "$PWD:/workspace" grafana/k6:master-with-browser inspect "/workspace/$script"
-            fi
-          done
-          
       - name: Run K6 script tests (dry run)
-        run: |
-          for script in scripts/*.js; do
-            if [ -f "$script" ]; then
-              echo "Testing $script..."
-              # Run with minimal iterations for validation
-              docker run --rm -v "$PWD:/workspace" \
-                -e GRAFANA_SERVICE_TOKEN="$GRAFANA_SERVICE_TOKEN" \
-                -e SM_ACCESS_TOKEN="$SM_ACCESS_TOKEN" \
-                grafana/k6:master-with-browser run --iterations 1 --vus 1 "/workspace/$script" || echo "Script $script failed validation"
-            fi
-          done
-        env:
-          GRAFANA_SERVICE_TOKEN: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
-          SM_ACCESS_TOKEN: ${{ secrets.SM_ACCESS_TOKEN }}
+        uses: grafana/run-k6-action@v1
+        with:
+          path: scripts/schiphol_homepage.js
+          flags: --iterations 1 --vus 1
 
   terraform-plan:
     runs-on: ubuntu-latest
