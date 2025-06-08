@@ -5,24 +5,24 @@ on:
     branches: [ main ]
 
 jobs:
-  validate-scripts:
+  run-test:
     runs-on: ubuntu-latest
-    name: Validate K6 Scripts
-    
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Run K6 script tests (dry run)
+
+      - name: Setup K6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run local k6 test
         uses: grafana/run-k6-action@v1
         with:
-          path: scripts/schiphol_homepage.js
-          flags: --iterations 1 --vus 1
+          path: ./scripts/schiphol_homepage.js
 
   terraform-plan:
     runs-on: ubuntu-latest
     name: Terraform Plan
-    needs: validate-scripts
+    needs: run-test
     
     steps:
       - name: Checkout code
