@@ -1,0 +1,78 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-scripts:
+    runs-on: ubuntu-latest
+    name: Validate K6 Scripts
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Validate K6 scripts syntax
+        run: |
+          for script in scripts/*.js; do
+            if [ -f "$script" ]; then
+              echo "Validating $script..."
+              docker run --rm -v "$PWD:/workspace" grafana/k6:master-with-browser inspect "/workspace/$script"
+            fi
+          done
+          
+      - name: Run K6 script tests (dry run)
+        run: |
+          for script in scripts/*.js; do
+            if [ -f "$script" ]; then
+              echo "Testing $script..."
+              # Run with minimal iterations for validation
+              docker run --rm -v "$PWD:/workspace" \
+                -e GRAFANA_SERVICE_TOKEN="$GRAFANA_SERVICE_TOKEN" \
+                -e SM_ACCESS_TOKEN="$SM_ACCESS_TOKEN" \
+                grafana/k6:master-with-browser run --iterations 1 --vus 1 "/workspace/$script" || echo "Script $script failed validation"
+            fi
+          done
+        env:
+          GRAFANA_SERVICE_TOKEN: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          SM_ACCESS_TOKEN: ${{ secrets.SM_ACCESS_TOKEN }}
+
+  terraform-plan:
+    runs-on: ubuntu-latest
+    name: Terraform Plan
+    needs: validate-scripts
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.0"
+          
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./main
+        
+      - name: Create terraform.tfvars
+        run: |
+          cat > main/terraform.tfvars << EOF
+          grafana_service_token = "${{ secrets.GRAFANA_SERVICE_TOKEN }}"
+          sm_access_token = "${{ secrets.SM_ACCESS_TOKEN }}"
+          EOF
+        
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ./main
+        
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        working-directory: ./main
+        env:
+          TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}

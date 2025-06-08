@@ -1,0 +1,80 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  run-scripts:
+    runs-on: ubuntu-latest
+    name: Execute K6 Scripts
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run K6 Scripts
+        run: |
+          success=true
+          for script in scripts/*.js; do
+            if [ -f "$script" ]; then
+              echo "Running $script..."
+              if ! docker run --rm -v "$PWD:/workspace" \
+                -e GRAFANA_SERVICE_TOKEN="$GRAFANA_SERVICE_TOKEN" \
+                -e SM_ACCESS_TOKEN="$SM_ACCESS_TOKEN" \
+                grafana/k6:master-with-browser run "/workspace/$script"; then
+                echo "Script $script failed"
+                success=false
+              fi
+            fi
+          done
+          if [ "$success" = false ]; then
+            echo "One or more scripts failed"
+            exit 1
+          fi
+        env:
+          GRAFANA_SERVICE_TOKEN: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          SM_ACCESS_TOKEN: ${{ secrets.SM_ACCESS_TOKEN }}
+
+  terraform-apply:
+    runs-on: ubuntu-latest
+    name: Apply Terraform Changes
+    needs: run-scripts
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.0"
+          
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./main
+        
+      - name: Create terraform.tfvars
+        run: |
+          cat > main/terraform.tfvars << EOF
+          grafana_service_token = "${{ secrets.GRAFANA_SERVICE_TOKEN }}"
+          sm_access_token = "${{ secrets.SM_ACCESS_TOKEN }}"
+          EOF
+        
+      - name: Terraform Plan
+        run: terraform plan -no-color -out=tfplan
+        working-directory: ./main
+        env:
+          TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}
+          
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: ./main
+        env:
+          TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
+          TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}
+          
+      - name: Clean up terraform.tfvars
+        if: always()
+        run: rm -f main/terraform.tfvars
