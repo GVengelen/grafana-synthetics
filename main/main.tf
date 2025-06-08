@@ -1,3 +1,5 @@
+data "grafana_synthetic_monitoring_probes" "main" {}
+
 resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_homepage" {
   job       = "Synthetics:BrowserCheck"
   target    = "homepage"
