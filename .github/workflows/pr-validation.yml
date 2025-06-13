@@ -36,6 +36,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~1.0"
+          cli_config_credentials_token: ${{ secrets.TF_STATE_TOKEN }}
           
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
@@ -43,13 +44,6 @@ jobs:
       - name: Terraform Init
         run: terraform init
         working-directory: ./main
-        
-      - name: Create terraform.tfvars
-        run: |
-          cat > main/terraform.tfvars << EOF
-          grafana_service_token = "${{ secrets.GRAFANA_SERVICE_TOKEN }}"
-          sm_access_token = "${{ secrets.SM_ACCESS_TOKEN }}"
-          EOF
         
       - name: Terraform Validate
         run: terraform validate

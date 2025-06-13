@@ -4,3 +4,4 @@ secrets.auto.tfvars
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl
+.terraformrc
