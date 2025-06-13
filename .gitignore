@@ -3,4 +3,3 @@ secrets.auto.tfvars
 .terraform/
 *.tfstate
 *.tfstate.*
-.terraform.lock.hcl
