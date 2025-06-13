@@ -13,7 +13,12 @@ resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_login" {
       script = file("${path.module}/../scripts/browser.js")
     }
   }
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
+
 resource "grafana_synthetic_monitoring_check" "Synthetics_HttpCheck_crocodiles" {
   job       = "Synthetics:BrowserCheck2"
   target    = "homepage"
@@ -26,5 +31,9 @@ resource "grafana_synthetic_monitoring_check" "Synthetics_HttpCheck_crocodiles" 
     browser {
       script = file("${path.module}/../scripts/http.js")
     }
+  }
+
+  lifecycle {
+    create_before_destroy = false
   }
 }
