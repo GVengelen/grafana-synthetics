@@ -601,7 +601,12 @@ This policy:
 ### Step 10: Deploying Your Alerting System
 Before we can deploy our new alerts, we'll need to update the rights of our Service Account. We'll be creating `folders` and `alerts`, so add those roles and click update in Grafana cloud.
 
-You can find this option under `/org/serviceaccounts`, th
+You can find this option under `/org/serviceaccounts`, on this page:
+1. Look for `synthetic-acces-policy`
+2. Add `Alerting Admin` role
+3. Add `Folder Admin` role
+4. In the select window click `update`.
+
 Now let's deploy our complete alerting system:
 
 ```bash
