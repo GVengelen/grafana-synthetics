@@ -9,30 +9,16 @@
 
 ## Structure
 
-- `main/` – Main Terraform configuration (resources, providers, variables, outputs, versions)
-- `modules/` – For reusable Terraform modules (optional, can be empty)
-- `envs/dev/secrets.auto.tfvars` – Environment-specific secrets and variables
+- `terraform/synthetics` – Terraform configuration (resources, providers, variables, outputs, versions)
+- `terraform/synthetics/envs/dev/secrets.auto.tfvars` – Environment-specific secrets and variables
 - `.gitignore` – Ignore state, secrets, and local files
 - `README.md` – Project documentation
+- `scripts` - K6 automation scripts
 
-## Usage
+## About this course
+This course is created to help engineers setup Synthetic Monitoring in Grafana Cloud. It draws inspiration from blogs from the Grafana Website. Best practices might change over time but at the time of writing I've used the following examples:
 
-1. Copy `main/secrets.auto.tfvars.example` to `envs/dev/secrets.auto.tfvars` and fill in your real values.
-2. Change to the `main/` directory:
-   ```sh
-   cd main
-   ```
-3. Run Terraform commands, specifying the environment variable file:
-   ```sh
-   terraform init
-   terraform plan -var-file=../envs/dev/secrets.auto.tfvars
-   terraform apply -var-file=../envs/dev/secrets.auto.tfvars
-   ```
+- [top-5-user-requested-synthetic-monitoring-alerts-in-grafana-cloud](https://grafana.com/blog/2022/01/11/top-5-user-requested-synthetic-monitoring-alerts-in-grafana-cloud/)
+- [grafana-cloud-synthetic-monitoring-all-the-latest-features/](https://grafana.com/blog/2024/05/01/grafana-cloud-synthetic-monitoring-all-the-latest-features/)
 
-## Extending
-- Place reusable code in `modules/` (create if needed).
-- For multiple environments, add more folders under `envs/` (e.g., `envs/prod/`).
-
-## Security
-- Never commit secrets or state files.
-- Review `.gitignore` regularly.
+Please feel free to open a ticket or PR to improve this repository. I hope you enjoy the sessions and learn something useful!
