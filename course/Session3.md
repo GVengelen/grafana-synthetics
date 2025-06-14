@@ -72,6 +72,7 @@ To automate Grafana Cloud Synthetics deployments, you'll need:
 - API keys with appropriate permissions
 - Service account tokens for CI/CD
 
+SM
 ## Setting Up Terraform for Grafana Synthetics
 
 ### What is Terraform?
@@ -272,6 +273,19 @@ sm_access_token       = "<Insert your Synthetic Monitoring access token here>"
 # get your token here https://{your-instance-name}.grafana.net/a/grafana-synthetic-monitoring-app/config/access-tokens
 ```
 
+#### Creating the Grafana Service token
+Service Accounts are the recommended approach for managing external acces by other machines. You can find SA settings under `/org/serviceaccounts`. Once your on this page: 
+1. click `Add Service Account` in the top right corner. 
+2. Name it `synthetic-acces-policy` and add the `Synthetic Monitoring` role. 
+3. Click save
+4. On you SA details page click `Add service account token` and copy the token.
+5. Store the token somewhere save since it cannot be retreived afterwards.
+
+#### Creating the SM acces token
+1. On Grafana cloud, navigate to `/a/grafana-synthetic-monitoring-app/config`
+2. Click `Generate Acces Token`
+3. Store the token somewhere save since it cannot be retreived afterwards.
+
 **Important**: Never commit the `*.tfvars` files (except example files) to version control as they contain sensitive information. Ensure they're included in your `.gitignore` file.
 
 ### Step 8: Setting Up Terraform Cloud
@@ -288,7 +302,7 @@ We'll bee using Terraform Cloud as our backend (as specified in `versions.tf`), 
 
 3. **Create a Workspace**:
    - Navigate to Workspaces → Create a new Workspace
-   - Select "CLI-driven workflow"
+   - Select "CLI-driven workflow", connect it to your Github Repo.
    - Name it "grafana-synthetics-main" to match our configuration
 
 4. **Set execution to local**
