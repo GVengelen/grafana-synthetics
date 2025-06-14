@@ -175,7 +175,7 @@ resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_login" {
 Then we'll add our http check:
 ```terraform
 resource "grafana_synthetic_monitoring_check" "Synthetics_HttpCheck_crocodiles" {
-  job       = "Synthetics:BrowserCheck2"
+  job       = "Synthetics:HttpCheck"
   target    = "crocodiles"
   enabled   = true
   probes    = [data.grafana_synthetic_monitoring_probes.main.probes.Frankfurt,]
