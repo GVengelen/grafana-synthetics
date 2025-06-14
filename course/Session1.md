@@ -6,6 +6,8 @@ Synthetics are automated scripts that simulate user interactions with your appli
 ## Understanding the Observability Gap and the Role of Synthetics
 The observability gap is the difference between what your monitoring tools can see and what your users actually experience. Synthetics bridge this gap by simulating real user journeys and API calls, providing visibility into the end-user experience.
 
+![image](https://github.com/user-attachments/assets/c6233247-30e9-4b43-85c2-166bc524b4b1)
+
 ## The Business Case for Proactive Monitoring
 - Early detection of outages and performance issues
 - Improved user satisfaction and reduced downtime
