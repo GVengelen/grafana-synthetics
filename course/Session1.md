@@ -87,17 +87,12 @@ When it comes to synthetic monitoring, you have several options including tradit
 - More complex setup compared to simple HTTP ping checks
 - Need to understand k6-specific APIs and concepts
 
-**2. Resource Overhead**
-- Higher resource consumption compared to lightweight HTTP checks
-- Docker containers require more memory and CPU than simple curl commands
-- Browser-based tests are particularly resource-intensive
-
-**3. Maintenance Complexity**
+**2. Maintenance Complexity**
 - Scripts need maintenance as applications evolve
 - More complex debugging when tests fail
 - Potential for false positives if scripts aren't well-designed
 
-**4. Overkill for Simple Checks**
+**3. Overkill for Simple Checks**
 - Traditional HTTP checks might be sufficient for basic uptime monitoring
 - Additional complexity may not be justified for simple health endpoints
 
