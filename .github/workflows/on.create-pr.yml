@@ -1,7 +1,7 @@
-name: Deploy to Production
+name: Pull Request Validation
 
 on:
-  push:
+  pull_request:
     branches: [ main ]
 
 jobs:
@@ -22,9 +22,10 @@ jobs:
           path: |
             ./scripts/*.js
 
-  terraform-apply:
+
+  terraform-plan:
     runs-on: ubuntu-latest
-    name: Apply Terraform Changes
+    name: Terraform Plan
     needs: validate-scripts
     
     steps:
@@ -37,20 +38,20 @@ jobs:
           terraform_version: "~1.5"
           cli_config_credentials_token: ${{ secrets.TF_STATE_TOKEN }}
           
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        
       - name: Terraform Init
         run: terraform init
-        working-directory: ./main
-          
+        working-directory: ./terraform/synthetics
+        
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ./terraform/synthetics
+        
       - name: Terraform Plan
-        run: terraform plan -no-color -out=tfplan
-        working-directory: ./main
-        env:
-          TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
-          TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}
-          
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
-        working-directory: ./main
+        run: terraform plan -no-color
+        working-directory: ./terraform/synthetics
         env:
           TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
           TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}

@@ -2,7 +2,7 @@ data "grafana_synthetic_monitoring_probes" "main" {}
 
 resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_login" {
   job       = "Synthetics:BrowserCheck"
-  target    = "homepage"
+  target    = "login"
   enabled   = true
   probes    = [data.grafana_synthetic_monitoring_probes.main.probes.London]
   labels    = {}
@@ -10,7 +10,7 @@ resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_login" {
   timeout   = 60000
   settings {
     browser {
-      script = file("${path.module}/../scripts/browser.js")
+      script = file("${path.module}/../../scripts/browser.js")
     }
   }
 
@@ -21,7 +21,7 @@ resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_login" {
 
 resource "grafana_synthetic_monitoring_check" "Synthetics_HttpCheck_crocodiles" {
   job       = "Synthetics:BrowserCheck2"
-  target    = "homepage"
+  target    = "crocodiles"
   enabled   = true
   probes    = [data.grafana_synthetic_monitoring_probes.main.probes.Frankfurt,]
   labels    = {}
@@ -29,7 +29,7 @@ resource "grafana_synthetic_monitoring_check" "Synthetics_HttpCheck_crocodiles" 
   timeout   = 60000
   settings {
     browser {
-      script = file("${path.module}/../scripts/http.js")
+      script = file("${path.module}/../../scripts/http.js")
     }
   }
 

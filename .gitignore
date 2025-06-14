@@ -1,5 +1,5 @@
 # Ignore secrets and Terraform state
 secrets.auto.tfvars
-.terraform/
+terraform/synthetics/.terraform/
 *.tfstate
 *.tfstate.*

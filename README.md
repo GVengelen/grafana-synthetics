@@ -1,5 +1,12 @@
 # grafana_synthetics Terraform Project
 
+## Table of Contents
+
+- [Session 1: Foundations and Setup](Course/Session1.md)
+- [Session 2: User Journey Simulation](Course/Session2.md)
+- [Session 3: Deploying your synthetics on Grafana Cloud](Course/Session3.md)
+- [Session 4: Performance Monitoring and Metrics](Course/Session4.md)
+
 ## Structure
 
 - `main/` – Main Terraform configuration (resources, providers, variables, outputs, versions)
