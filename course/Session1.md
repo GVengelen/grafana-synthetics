@@ -16,11 +16,9 @@ The observability gap is the difference between what your monitoring tools can s
 
 ## Setting Up Your Local Environment
 ### Prerequisites
-- Node.js (v16+ recommended)
 - Docker (for running k6 tests)
 - Terraform CLI (for infrastructure as code)
 - Git (for version control)
-- A Grafana Cloud account
 
 ### Steps
 1. Create your own repository an name it grafana_synthetics
