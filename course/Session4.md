@@ -678,8 +678,7 @@ Grafana alerts can be in several states:
 #### Choosing Thresholds
 - **Start Conservative**: Begin with loose thresholds and tighten based on data
 - **Consider Baselines**: Use historical data to understand normal patterns
-- **Account for Seasonality**: Some services have predictable traffic patterns
-- **Separate Critical vs Warning**: Use different thresholds for different severity levels
+- **Separate Critical vs non-criticals**: Use different thresholds for different severities
 
 #### Setting Evaluation Intervals
 - **Balance Responsiveness vs Load**: More frequent evaluation catches issues faster but uses more resources
@@ -689,7 +688,6 @@ Grafana alerts can be in several states:
 #### Structuring Notification Policies
 - **Route by Severity**: Critical alerts should wake people up; warnings can wait
 - **Group Related Alerts**: Avoid spam by grouping related alerts
-- **Escalation Paths**: Route to on-call rotation, then to managers, then to executives
 - **Time-Based Routing**: Different contacts for business hours vs off-hours
 
 ## Further Reading and Resources

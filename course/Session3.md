@@ -118,7 +118,7 @@ provider "grafana" {
   sm_access_token = var.sm_access_token
 }
 ```
-You can create a free account at [grafana](https://grafana.com/auth/sign-up).
+You can create a free account at [grafana](https://grafana.com/auth/sign-up?refCode=gr8LmtwELr8U3Lq). I'm not making any money off this referral code.
 Each user you is eligible for a 14-day trial of Pro and forever-free access to Grafana Cloud.
 
 You can find the urls for the provider at: https://{your-instance-name}.grafana.net/a/grafana-synthetic-monitoring-app/config/terraform
