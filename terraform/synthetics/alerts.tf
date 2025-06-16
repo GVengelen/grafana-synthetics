@@ -189,7 +189,7 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
         conditions = [
           {
             evaluator = {
-              params = [1]
+              params = [15]
               type   = "gt"
             }
             operator = {
