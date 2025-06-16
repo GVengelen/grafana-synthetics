@@ -408,7 +408,7 @@ resource "grafana_contact_point" "synthetic_monitoring_alerts" {
   name = "synthetic-monitoring-alerts"
 
   email {
-    addresses = ["g.vanengelen@codepeople.nl"]
+    addresses = ["<your email address>"]
     subject   = "Grafana Synthetic Monitoring Alert"
     message   = <<-EOT
       Alert: {{ .GroupLabels.alertname }}
