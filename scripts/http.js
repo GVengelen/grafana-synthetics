@@ -4,58 +4,83 @@ import { randomString, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2
 
 export default function() {
 
+    // API Configuration
+    const API_KEY = "reqres-free-v1";
+    
     // User info
     const first_name = randomString(10);
     const last_name = randomString(10);
-    const email = `${first_name}.${last_name}@test.com`; 
+    const email = "eve.holt@reqres.in"
     const password = randomString(10);
 
     // STEP 1: Register a new user
-    let response = http.post("https://test-api.k6.io/user/register/", {
-        first_name,
-        last_name,
-        username: email,
+    let response = http.post("https://reqres.in/api/register", JSON.stringify({
         email,
         password
+    }), {
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY
+        }
     });
 
     check(response, {
-        '1. User registration': (r) => r.status === 201,
+        '1. User registration': (r) => r.status === 200, // ReqRes returns 200 for successful registration
     }) || fail(`User registration failed with ${response.status}`);
 
-    // STEP 2: Autheticate
-    response = http.post("https://test-api.k6.io/auth/cookie/login/", { username:email, password });
+    const token = response.json('token');
+
+    // STEP 2: Login (simulate authentication)
+    response = http.post("https://reqres.in/api/login", JSON.stringify({ 
+        email, 
+        password 
+    }), {
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY
+        }
+    });
 
     check(response, {
         "2a. login successful": (r) => r.status === 200,
-        "2b. user name is correct": (r) => r.json('first_name') === first_name,
-        "2c. user email is correct": (r) => r.json('email') === email
+        "2b. token received": (r) => r.json('token') !== undefined
     });
 
-    // STEP 3: Create a "crocodile" object
-    const name = randomString(10);
-    const sex = ['M','F'][randomIntBetween(0,1)];
-    const date_of_birth = new Date().toISOString().split('T')[0];
+    const authToken = response.json('token');
 
-    response = http.post("https://test-api.k6.io/my/crocodiles/",{name, sex, date_of_birth});
+    // STEP 3: Create a user (simulating "crocodile" creation with user creation)
+    const userData = {
+        name: randomString(10),
+        job: "crocodile keeper", // Using job field as ReqRes supports this
+    };
+
+    response = http.post("https://reqres.in/api/users", JSON.stringify(userData), {
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            'x-api-key': API_KEY
+        }
+    });
 
     const id = parseInt(response.json('id'));
-    check( response, {
-        "3a. Crocodile created and has and id": (r) => r.status === 201 && id && id > 0,
-        "3b. Crocodile name is correct": (r) => r.json('name') === name,
-    }) || fail(`Crocodile creation failed with status ${response.status}`);
+    check(response, {
+        "3a. User created and has an id": (r) => r.status === 201 && id && id > 0,
+        "3b. User name is correct": (r) => r.json('name') === userData.name,
+    }) || fail(`User creation failed with status ${response.status}`);
 
-    // STEP 4: Delete the "crocodile"
-    // (The http.url helper will group distinct URLs together in the metrics)
-    response = http.del(http.url`https://test-api.k6.io/my/crocodiles/${id}/`);
-    check( response, {
-        "4a. Crocodile was deleted": (r) => r.status === 204
-    }) 
+    // STEP 4: Update the user (ReqRes doesn't support DELETE, so we'll do an update)
+    response = http.put(`https://reqres.in/api/users/${id}`, JSON.stringify({
+        name: userData.name,
+        job: "updated crocodile keeper"
+    }), {
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            'x-api-key': API_KEY
+        }
+    });
 
-    // STEP 5: Logout
-    response = http.post(`https://test-api.k6.io/auth/cookie/logout/`);
-
-    check( response, {
-        "5a. Logout successful": (r) => r.status === 200
+    check(response, {
+        "4a. User was updated": (r) => r.status === 200
     });
 }
