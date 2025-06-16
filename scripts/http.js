@@ -1,6 +1,6 @@
 import {check, fail} from "k6";
 import http from "k6/http";
-import { randomString, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 export default function() {
 
