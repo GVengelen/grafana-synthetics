@@ -137,11 +137,11 @@ To be able to create your test script it's important to keep in mind that good t
 ## Hands-on: Building a Complete User Journey
 
 In this exercise, we'll build a comprehensive user journey that:
-1. Creates a new user account
+1. Creates a new user account through registration
 2. Logs in with the created credentials
-3. Performs a series of API actions
-4. Verifies the results
-5. Cleans up and logs out
+3. Creates a new resource
+4. Updates the resource
+5. Verifies the results at each step
 
 You can run the test at each step using:
 
@@ -158,15 +158,15 @@ Start with importing the required libraries:
 ```javascript
 import {check, fail} from "k6";
 import http from "k6/http";
-import { randomString, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 ```
 
 In this step, we're importing three essential components:
 - `check` and `fail` from k6 for assertions and error handling
 - `http` module for making API requests
-- Utility functions `randomString` and `randomIntBetween` for generating test data
+- Utility function `randomString` for generating test data
 
-These imports give us the core functionality we need to our user journey tests.
+These imports give us the core functionality we need for our user journey tests.
 
 ### Step 2: Create the main test function
 
@@ -174,149 +174,154 @@ Add the default export function that will contain our test steps:
 
 ```javascript
 export default function() {
-  // Our user journey steps will go here
+  // API Configuration
+  const API_KEY = "reqres-free-v1";
+  
+  // User info
+  const first_name = randomString(10);
+  const last_name = randomString(10);
+  const email = "eve.holt@reqres.in"
+  const password = randomString(10);
 }
 ```
 
-This default function is the entry point for k6. When your test runs, k6 will execute this function for each virtual user. All our journey steps will be contained within this function, ensuring they run in the correct sequence.
+This default function is the entry point for k6. When your test runs, k6 will execute this function for each virtual user. 
+We're setting up our API key and user information, including a specific email that works with the reqres.in API.
 
-### Step 3: Generate dynamic user information
-
-Inside the function, add code to generate random user credentials:
-
-```javascript
-// User info
-const first_name = randomString(10);
-const last_name = randomString(10);
-const email = `${first_name}.${last_name}@test.com`; 
-const password = randomString(10);
-```
-
-This step demonstrates an important best practice in user journey testing - using dynamic data. By generating random values for each test run:
-
-1. We avoid collisions between concurrent test executions
-2. We prevent test data buildup in the application database
-3. We ensure our tests can verify the system works with a variety of inputs, not just hardcoded values
-
-The email format combines first and last name, creating a recognizable pattern while still ensuring uniqueness.
-
-### Step 4: Implement user registration
+### Step 3: Implement user registration
 
 Add the first step to register a new user:
 
 ```javascript
 // STEP 1: Register a new user
-let response = http.post("https://test-api.k6.io/user/register/", {
-    first_name,
-    last_name,
-    username: email,
+let response = http.post("https://reqres.in/api/register", JSON.stringify({
     email,
     password
+}), {
+    headers: { 
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY
+    }
 });
 
 check(response, {
-    '1. User registration': (r) => r.status === 201,
+    '1. User registration': (r) => r.status === 200, // ReqRes returns 200 for successful registration
 }) || fail(`User registration failed with ${response.status}`);
+
+const token = response.json('token');
 ```
 
-In this critical first step of our user journey, we're:
+In this first step of our user journey, we're:
 
-1. **Making a POST Request**: We send a POST request to the registration endpoint with our dynamically generated user information.
+1. **Making a POST Request**: We send a JSON POST request to the registration endpoint with our user information.
 
-2. **Submitting Form Data**: We provide all required fields for creating a new user account: first name, last name, username (using the email), email address, and password.
+2. **Setting Headers**: We include the 'Content-Type: application/json' header to indicate we're sending JSON data, along with an API key.
 
-3. **Validating Success**: We use the `check` function to verify the response status code is 201 (Created), which indicates successful user creation.
+3. **Validating Success**: We use the `check` function to verify the response status code is 200, which indicates successful user registration with reqres.in.
 
-4. **Implementing Error Handling**: If the check fails, we use the `fail` function to abort the test with a descriptive error message that includes the actual status code. This helps with troubleshooting when tests fail.
+4. **Capturing the Token**: We extract the authentication token from the response which we'll need for subsequent authenticated requests.
 
-This is a proper API interaction patterns and error handling. The registration is a prerequisite for all following steps in our journey - if a user can't register, there's no point continuing with the test.
+This step establishes our user in the system and obtains the necessary credentials for the rest of the journey.
 
-If users cannot sign up, this is very bad for our company!
-
-![Login authentication flow](./images/login.jpg)
-
-### Step 5: Implement user authentication
+### Step 4: Implement user authentication
 
 Add code to log in with the newly created user:
 
 ```javascript
-// STEP 2: Authenticate
-response = http.post("https://test-api.k6.io/auth/cookie/login/", { username:email, password });
+// STEP 2: Login (simulate authentication)
+response = http.post("https://reqres.in/api/login", JSON.stringify({ 
+    email, 
+    password 
+}), {
+    headers: { 
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY
+    }
+});
 
 check(response, {
     "2a. login successful": (r) => r.status === 200,
-    "2b. user name is correct": (r) => r.json('first_name') === first_name,
-    "2c. user email is correct": (r) => r.json('email') === email
+    "2b. token received": (r) => r.json('token') !== undefined
 });
+
+const authToken = response.json('token');
 ```
 
 In this authentication step, we're:
 
-1. Sending the credentials we created in the previous step to the login endpoint
-2. Using multiple checks to validate not just the HTTP status code, but also the content of the response
-3. Verifying that the system correctly associates our login with the user profile we created
+1. Sending the credentials to the login endpoint in JSON format
+2. Verifying the status code indicates successful authentication
+3. Confirming we received a token in the response
+4. Storing the authentication token for subsequent requests
 
-Here we show that the authentication system is working and we can login with our new user!
+This step verifies that our authentication system is working correctly!
 
-### Step 6: Create a crocodile
+### Step 5: Create a new resource
 
-Add code to create a new crocodile in the system:
+Add code to create a new user resource:
 
 ```javascript
-// STEP 3: Create a "crocodile"
-const name = randomString(10);
-const sex = ['M','F'][randomIntBetween(0,1)];
-const date_of_birth = new Date().toISOString().split('T')[0];
+// STEP 3: Create a user (simulating resource creation)
+const userData = {
+    name: randomString(10),
+    job: "crocodile keeper",
+};
 
-response = http.post("https://test-api.k6.io/my/crocodiles/",{name, sex, date_of_birth});
+response = http.post("https://reqres.in/api/users", JSON.stringify(userData), {
+    headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+        'x-api-key': API_KEY
+    }
+});
 
 const id = parseInt(response.json('id'));
 check(response, {
-    "3a. Crocodile created and has and id": (r) => r.status === 201 && id && id > 0,
-    "3b. Crocodile name is correct": (r) => r.json('name') === name,
-}) || fail(`Crocodile creation failed with status ${response.status}`);
+    "3a. User created and has an id": (r) => r.status === 201 && id && id > 0,
+    "3b. User name is correct": (r) => r.json('name') === userData.name,
+}) || fail(`User creation failed with status ${response.status}`);
 ```
 
-Here, we're interacting with a different API endpoint to create a new resource (a "crocodile"). We're testing the ability to:
+Here, we're interacting with the user creation endpoint to:
 
-- Work with multiple API endpoints
-- Handle different request/response structures
-- Chain actions together (register -> login -> create object)
+- Create a new resource with random data
+- Include our authentication token in the request header
+- Verify the creation was successful with a 201 Created status
+- Confirm the response contains the correct data and a valid ID
+- Store the ID for the next step
 
-### Step 7: Delete the created object
+This demonstrates how to chain actions together by using data from previous steps.
 
-Add code to clean up by deleting the created object:
+### Step 6: Update the created resource
 
-```javascript
-// STEP 4: Delete the "crocodile"
-// (The http.url helper will group distinct URLs together in the metrics)
-response = http.del(http.url`https://test-api.k6.io/my/crocodiles/${id}/`);
-check(response, {
-    "4a. Crocodile was deleted": (r) => r.status === 204
-}) 
-```
-
-Cleanup steps are crucial in tests that modify data. Here we're:
-
-- Using the HTTP DELETE method to remove the object we created
-- Verifying the deletion was successful with a 204 No Content status check
-
-![Cleanup](./images/cleanup.jpg)
-
-### Step 8: Implement logout
-
-Finally, add code to log out:
+Add code to update the resource:
 
 ```javascript
-// STEP 5: Logout
-response = http.post(`https://test-api.k6.io/auth/cookie/logout/`);
+// STEP 4: Update the user
+response = http.put(`https://reqres.in/api/users/${id}`, JSON.stringify({
+    name: userData.name,
+    job: "updated crocodile keeper"
+}), {
+    headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+        'x-api-key': API_KEY
+    }
+});
 
 check(response, {
-    "5a. Logout successful": (r) => r.status === 200
+    "4a. User was updated": (r) => r.status === 200
 });
 ```
 
-Logging out ensures our test user session is properly closed. This step is especially important in applications where session management is critical.
+In this final step, we're:
+
+- Using the HTTP PUT method to update the resource we created
+- Including the resource ID in the URL path
+- Sending updated data in JSON format
+- Verifying the update was successful with a 200 OK status
+
+This completes our user journey by demonstrating a full CRUD cycle (minus deletion, which reqres.in doesn't support directly).
 
 ### Complete Script
 
@@ -325,63 +330,88 @@ Your final script should look like this:
 ```javascript
 import {check, fail} from "k6";
 import http from "k6/http";
-import { randomString, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 export default function() {
 
+    // API Configuration
+    const API_KEY = "reqres-free-v1";
+    
     // User info
     const first_name = randomString(10);
     const last_name = randomString(10);
-    const email = `${first_name}.${last_name}@test.com`; 
+    const email = "eve.holt@reqres.in"
     const password = randomString(10);
 
     // STEP 1: Register a new user
-    let response = http.post("https://test-api.k6.io/user/register/", {
-        first_name,
-        last_name,
-        username: email,
+    let response = http.post("https://reqres.in/api/register", JSON.stringify({
         email,
         password
+    }), {
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY
+        }
     });
 
     check(response, {
-        '1. User registration': (r) => r.status === 201,
+        '1. User registration': (r) => r.status === 200, // ReqRes returns 200 for successful registration
     }) || fail(`User registration failed with ${response.status}`);
 
-    // STEP 2: Authenticate
-    response = http.post("https://test-api.k6.io/auth/cookie/login/", { username:email, password });
+    const token = response.json('token');
+
+    // STEP 2: Login (simulate authentication)
+    response = http.post("https://reqres.in/api/login", JSON.stringify({ 
+        email, 
+        password 
+    }), {
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY
+        }
+    });
 
     check(response, {
         "2a. login successful": (r) => r.status === 200,
-        "2b. user name is correct": (r) => r.json('first_name') === first_name,
-        "2c. user email is correct": (r) => r.json('email') === email
+        "2b. token received": (r) => r.json('token') !== undefined
     });
 
-    // STEP 3: Create a "crocodile" object
-    const name = randomString(10);
-    const sex = ['M','F'][randomIntBetween(0,1)];
-    const date_of_birth = new Date().toISOString().split('T')[0];
+    const authToken = response.json('token');
 
-    response = http.post("https://test-api.k6.io/my/crocodiles/",{name, sex, date_of_birth});
+    // STEP 3: Create a user (simulating "crocodile" creation with user creation)
+    const userData = {
+        name: randomString(10),
+        job: "crocodile keeper", // Using job field as ReqRes supports this
+    };
+
+    response = http.post("https://reqres.in/api/users", JSON.stringify(userData), {
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            'x-api-key': API_KEY
+        }
+    });
 
     const id = parseInt(response.json('id'));
     check(response, {
-        "3a. Crocodile created and has and id": (r) => r.status === 201 && id && id > 0,
-        "3b. Crocodile name is correct": (r) => r.json('name') === name
-    )} || fail(`Crocodile creation failed with status ${response.status}`);
+        "3a. User created and has an id": (r) => r.status === 201 && id && id > 0,
+        "3b. User name is correct": (r) => r.json('name') === userData.name,
+    }) || fail(`User creation failed with status ${response.status}`);
 
-    // STEP 4: Delete the "crocodile"
-    // (The http.url helper will group distinct URLs together in the metrics)
-    response = http.del(http.url`https://test-api.k6.io/my/crocodiles/${id}/`);
+    // STEP 4: Update the user (ReqRes doesn't support DELETE, so we'll do an update)
+    response = http.put(`https://reqres.in/api/users/${id}`, JSON.stringify({
+        name: userData.name,
+        job: "updated crocodile keeper"
+    }), {
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            'x-api-key': API_KEY
+        }
+    });
+
     check(response, {
-        "4a. Crocodile was deleted": (r) => r.status === 204
-    }) 
-
-    // STEP 5: Logout
-    response = http.post(`https://test-api.k6.io/auth/cookie/logout/`);
-
-    check(response, {
-        "5a. Logout successful": (r) => r.status === 200
+        "4a. User was updated": (r) => r.status === 200
     });
 }
 ```
