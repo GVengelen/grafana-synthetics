@@ -367,7 +367,7 @@ export default function() {
     const id = parseInt(response.json('id'));
     check(response, {
         "3a. Crocodile created and has and id": (r) => r.status === 201 && id && id > 0,
-        "3b. Crocodile name is correct": (r) => r.json('name') === name,
+        "3b. Crocodile name is correct": (r) => r.json('name') === name
     )} || fail(`Crocodile creation failed with status ${response.status}`);
 
     // STEP 4: Delete the "crocodile"

@@ -1,5 +1,6 @@
 import { browser } from 'k6/browser';
 import { check } from 'https://jslib.k6.io/k6-utils/1.5.0/index.js';
+import { sleep } from 'k6';
 
 export const options = {
   scenarios: {
@@ -26,7 +27,8 @@ export default async function () {
 
     await page.locator('input[name="login"]').type("admin");
     await page.locator('input[name="password"]').type("123");
-
+    await sleep(15)
+    
     await Promise.all([
       page.waitForNavigation(),
       page.locator('input[type="submit"]').click(),
