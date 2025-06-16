@@ -547,7 +547,7 @@ Next, we initialize Terraform:
 
 This step:
 - Runs `terraform init` to download providers and set up the backend
-- `working-directory: ./main`: Changes to the main directory before running the command
+- `working-directory: ./terraform/synthetics`: Changes to the main directory before running the command
 
 We validate the Terraform configuration:
 
@@ -628,18 +628,18 @@ jobs:
           
       - name: Terraform Init
         run: terraform init
-        working-directory: ./main
+        working-directory: ./terraform/synthetics
           
       - name: Terraform Plan
         run: terraform plan -no-color -out=tfplan
-        working-directory: ./main
+        working-directory: ./terraform/synthetics
         env:
           TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
           TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}
           
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
-        working-directory: ./main
+        working-directory: ./terraform/synthetics
         env:
           TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
           TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}
