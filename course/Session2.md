@@ -438,7 +438,7 @@ First, we need to import the necessary modules and configure our test options:
 
 ```javascript
 import { browser } from 'k6/browser';
-import { check } from 'k6';
+import { check } from 'https://jslib.k6.io/k6-utils/1.5.0/index.js';
 
 export const options = {
   scenarios: {
@@ -575,7 +575,7 @@ Your complete browser test script should look like this:
 
 ```javascript
 import { browser } from 'k6/browser';
-import { check } from 'k6';
+import { check } from 'https://jslib.k6.io/k6-utils/1.5.0/index.js';
 
 export const options = {
   scenarios: {

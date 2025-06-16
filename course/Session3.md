@@ -112,12 +112,15 @@ Create a file called `providers.tf` with the following content:
 
 ```terraform
 provider "grafana" {
-  url             = "https://gjvengelen.grafana.net/"
+  url             = "https://{your-instance-name}.grafana.net/"
   auth            = var.grafana_service_token
   sm_url          = "https://synthetic-monitoring-api-eu-west-2.grafana.net"
   sm_access_token = var.sm_access_token
 }
 ```
+
+**NOTE**: If you deployed grafana in a different region, you should update the sm_url accordingly. You can find the right url under Testing & Synthetics > Config > Terraform.
+
 You can create a free account at [grafana](https://grafana.com/auth/sign-up?refCode=gr8LmtwELr8U3Lq). I'm not making any money off this referral code.
 Each user you is eligible for a 14-day trial of Pro and forever-free access to Grafana Cloud.
 
@@ -321,20 +324,13 @@ We'll bee using Terraform Cloud as our backend (as specified in `versions.tf`), 
 6. **Configure Terraform CLI Authentication**:
    - Create or edit the Terraform CLI configuration file in your home directory:
 
+In your terminal run the following command:
 ```bash
-vi ~/.terraformrc
-```
-you can use nano as well, I'm not judging.
-
-   - Add the following content, replacing `YOUR_TOKEN_HERE` with your actual token:
-
-```
-credentials "app.terraform.io" {
-  token = "YOUR_TOKEN_HERE"
-}
+terraform login
 ```
 
-   - Save the file and exit
+Enter `yes` when asked if you want to login. Follow the steps in the browser and copy the token.
+Then go back to your terminal and enter the token when requested. The line will seem empty after pasting.
 
 This configuration allows Terraform to authenticate with Terraform Cloud when you run commands like `terraform init` and `terraform apply`.
 
