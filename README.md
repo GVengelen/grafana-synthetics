@@ -2,10 +2,10 @@
 
 ## Table of Contents
 
-- [Session 1: Foundations and Setup](Course/Session1.md)
-- [Session 2: User Journey Simulation](Course/Session2.md)
-- [Session 3: Deploying your synthetics on Grafana Cloud](Course/Session3.md)
-- [Session 4: Performance Monitoring and Metrics](Course/Session4.md)
+- [Session 1: Foundations and Setup](course/Session1.md)
+- [Session 2: User Journey Simulation](course/Session2.md)
+- [Session 3: Deploying your synthetics on Grafana Cloud](course/Session3.md)
+- [Session 4: Performance Monitoring and Metrics](course/Session4.md)
 
 ## Structure
 
@@ -16,6 +16,7 @@
 - `scripts` - K6 automation scripts
 
 ## About this course
+
 This course is created to help engineers setup Synthetic Monitoring in Grafana Cloud. It draws inspiration from blogs from the Grafana Website. Best practices might change over time but at the time of writing I've used the following examples:
 
 - [top-5-user-requested-synthetic-monitoring-alerts-in-grafana-cloud](https://grafana.com/blog/2022/01/11/top-5-user-requested-synthetic-monitoring-alerts-in-grafana-cloud/)
