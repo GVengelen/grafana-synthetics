@@ -200,7 +200,7 @@ Then we'll add our http check:
 ```terraform
 resource "grafana_synthetic_monitoring_check" "Synthetics_HttpCheck" {
   job       = "Synthetics:HttpCheck"
-  target    = "crocodiles"
+  target    = "http"
   enabled   = true
   probes    = [data.grafana_synthetic_monitoring_probes.main.probes.Frankfurt,]
   labels    = {}
