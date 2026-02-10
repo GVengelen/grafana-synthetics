@@ -23,9 +23,7 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
         expr          = <<-EOT
-          avg by (instance, job, severity) (
-            instance_job_severity:probe_success:mean5m{alert_sensitivity="low"}
-          )
+          avg by(instance, job, severity) (probe_check_success_rate)
         EOT
         refId         = "A"
         intervalMs    = 1000
@@ -46,7 +44,7 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
         conditions = [
           {
             evaluator = {
-              params = [95]
+              params = [1]
               type   = "lt"
             }
             operator = {
