@@ -42,28 +42,17 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId      = "C"
+        type       = "threshold"
+        expression = "A"
         conditions = [
           {
             evaluator = {
               params = [0]
               type   = "eq"
             }
-            operator = {
-              type = "and"
-            }
-            query = {
-              model = ""
-              params = ["A"]
-            }
-            reducer = {
-              params = []
-              type   = "last"
-            }
-            type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
@@ -114,28 +103,17 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId      = "C"
+        type       = "threshold"
+        expression = "A"
         conditions = [
           {
             evaluator = {
               params = [0.9]
               type   = "lt"
             }
-            operator = {
-              type = "and"
-            }
-            query = {
-              model = ""
-              params = ["A"]
-            }
-            reducer = {
-              params = []
-              type   = "last"
-            }
-            type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
@@ -155,78 +133,67 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
   }
 
   # Step 3: High Latency Alert - fires when average latency goes above 1 second
-  rule {
-    name      = "High Latency - Above 1 Second"
-    condition = "C"
-    
-    data {
-      ref_id = "A"
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      datasource_uid = data.grafana_data_source.prometheus.uid
-      model = jsonencode({
-        expr = <<-EOT
-          sum by (instance, job) (rate(probe_all_duration_seconds_sum{}[10m]))
-          /
-          sum by (instance, job) (rate(probe_all_duration_seconds_count{}[10m]))
-        EOT
-        refId      = "A"
-        intervalMs = 1000
-        maxDataPoints = 43200
-      })
-    }
+  rule {  
+  name      = "High Latency - Above 1 Second"  
+  condition = "C"  
+  
+  data {  
+    ref_id = "A"  
+    relative_time_range {  
+      from = 600  
+      to   = 0  
+    }  
+    datasource_uid = data.grafana_data_source.prometheus.uid  
+    model = jsonencode({  
+      expr = <<-EOT  
+        sum by (instance, job) (rate(probe_all_duration_seconds_sum{}[10m]))  
+        /  
+        sum by (instance, job) (rate(probe_all_duration_seconds_count{}[10m]))  
+      EOT  
+      refId         = "A"  
+      intervalMs    = 1000  
+      maxDataPoints = 43200  
+    })  
+  }  
 
-    data {
-      ref_id = "C"
-      relative_time_range {
-        from = 0
-        to   = 0
-      }
-      datasource_uid = "__expr__"
-      model = jsonencode({
-        conditions = [
-          {
-            evaluator = {
-              params = [15]
-              type   = "gt"
-            }
-            operator = {
-              type = "and"
-            }
-            query = {
-              model = ""
-              params = ["A"]
-            }
-            reducer = {
-              params = []
-              type   = "last"
-            }
-            type = "query"
-          }
-        ]
-        refId = "C"
-        type  = "classic_conditions"
-      })
-    }
+  data {  
+    ref_id = "C"  
+    relative_time_range {  
+      from = 0  
+      to   = 0  
+    }  
+    datasource_uid = "__expr__"  
+    model = jsonencode({  
+      refId      = "C"  
+      type       = "threshold"  
+      expression = "A"  
+      conditions = [  
+        {  
+          evaluator = {  
+            params = [1]  
+            type   = "gt"  
+          }  
+        }  
+      ]  
+    })  
+  }  
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
-    annotations = {
-      summary     = "High latency for {{ $labels.instance }} ({{ $labels.job }})"
-      description = "Average latency for {{ $labels.instance }} ({{ $labels.job }}) is above 1 second (currently {{ $value }}s)."
-    }
-    
-    labels = {
-      severity = "warning"
-      team     = "platform"
-    }
-  }
+  for             = "5m"  
+  no_data_state   = "NoData"  
+  exec_err_state  = "Alerting"  
+  
+  annotations = {  
+    summary     = "High latency for {{ $labels.instance }} ({{ $labels.job }})"  
+    description = "Average latency for {{ $labels.instance }} ({{ $labels.job }}) is above 1 second (currently {{ $value }}s)."  
+  }  
+  
+labels = {  
+  severity = "warning"  
+  team     = "platform"  
+}  
+}
 
-  # Step 4: High Error Rate Alert - fires when error rate is above 10%
+# Step 4: High Error Rate Alert - fires when error rate is above 10%
   rule {
     name      = "High Error Rate - Above 10%"
     condition = "C"
@@ -260,28 +227,17 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId      = "C"
+        type       = "threshold"
+        expression = "A"
         conditions = [
           {
             evaluator = {
               params = [0.1]
               type   = "gt"
             }
-            operator = {
-              type = "and"
-            }
-            query = {
-              model = ""
-              params = ["A"]
-            }
-            reducer = {
-              params = []
-              type   = "last"
-            }
-            type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
@@ -334,28 +290,17 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId      = "C"
+        type       = "threshold"
+        expression = "A"
         conditions = [
           {
             evaluator = {
               params = [0.5]
               type   = "gt"
             }
-            operator = {
-              type = "and"
-            }
-            query = {
-              model = ""
-              params = ["A"]
-            }
-            reducer = {
-              params = []
-              type   = "last"
-            }
-            type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
