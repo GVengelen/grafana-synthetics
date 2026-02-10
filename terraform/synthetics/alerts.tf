@@ -14,7 +14,7 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
   rule {
     name      = "Target Down - All Probes Failing"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
@@ -23,13 +23,13 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
+        expr          = <<-EOT
           sum by (instance, job) (rate(probe_all_success_sum{}[10m]))
           /
           sum by (instance, job) (rate(probe_all_success_count{}[10m]))
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -56,15 +56,15 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
       summary     = "Target {{ $labels.instance }} ({{ $labels.job }}) is down - all probes failing"
       description = "The target {{ $labels.instance }} for job {{ $labels.job }} has been unreachable from all probes for more than 5 minutes."
     }
-    
+
     labels = {
       severity = "critical"
       team     = "platform"
@@ -75,7 +75,7 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
   rule {
     name      = "Low Reachability - Below 90%"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
@@ -84,13 +84,13 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
+        expr          = <<-EOT
           sum by (instance, job) (rate(probe_all_success_sum{}[10m]))
           /
           sum by (instance, job) (rate(probe_all_success_count{}[10m]))
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -117,15 +117,15 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
       summary     = "Low reachability for {{ $labels.instance }} ({{ $labels.job }})"
       description = "Reachability for {{ $labels.instance }} ({{ $labels.job }}) has dropped below 90% (currently {{ $value | humanizePercentage }})."
     }
-    
+
     labels = {
       severity = "warning"
       team     = "platform"
@@ -133,71 +133,10 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
   }
 
   # Step 3: High Latency Alert - fires when average latency goes above 1 second
-  rule {  
-  name      = "High Latency - Above 1 Second"  
-  condition = "C"  
-  
-  data {  
-    ref_id = "A"  
-    relative_time_range {  
-      from = 600  
-      to   = 0  
-    }  
-    datasource_uid = data.grafana_data_source.prometheus.uid  
-    model = jsonencode({  
-      expr = <<-EOT  
-        sum by (instance, job) (rate(probe_all_duration_seconds_sum{}[10m]))  
-        /  
-        sum by (instance, job) (rate(probe_all_duration_seconds_count{}[10m]))  
-      EOT  
-      refId         = "A"  
-      intervalMs    = 1000  
-      maxDataPoints = 43200  
-    })  
-  }  
-
-  data {  
-    ref_id = "C"  
-    relative_time_range {  
-      from = 0  
-      to   = 0  
-    }  
-    datasource_uid = "__expr__"  
-    model = jsonencode({  
-      refId      = "C"  
-      type       = "threshold"  
-      expression = "A"  
-      conditions = [  
-        {  
-          evaluator = {  
-            params = [1]  
-            type   = "gt"  
-          }  
-        }  
-      ]  
-    })  
-  }  
-
-  for             = "5m"  
-  no_data_state   = "NoData"  
-  exec_err_state  = "Alerting"  
-  
-  annotations = {  
-    summary     = "High latency for {{ $labels.instance }} ({{ $labels.job }})"  
-    description = "Average latency for {{ $labels.instance }} ({{ $labels.job }}) is above 1 second (currently {{ $value }}s)."  
-  }  
-  
-labels = {  
-  severity = "warning"  
-  team     = "platform"  
-}  
-}
-
-# Step 4: High Error Rate Alert - fires when error rate is above 10%
   rule {
-    name      = "High Error Rate - Above 10%"
+    name      = "High Latency - Above 1 Second"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
@@ -206,15 +145,76 @@ labels = {
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
+        expr          = <<-EOT
+          sum by (instance, job) (rate(probe_all_duration_seconds_sum{}[10m]))
+          /
+          sum by (instance, job) (rate(probe_all_duration_seconds_count{}[10m]))
+        EOT
+        refId         = "A"
+        intervalMs    = 1000
+        maxDataPoints = 43200
+      })
+    }
+
+    data {
+      ref_id = "C"
+      relative_time_range {
+        from = 0
+        to   = 0
+      }
+      datasource_uid = "__expr__"
+      model = jsonencode({
+        refId      = "C"
+        type       = "threshold"
+        expression = "A"
+        conditions = [
+          {
+            evaluator = {
+              params = [1]
+              type   = "gt"
+            }
+          }
+        ]
+      })
+    }
+
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
+    annotations = {
+      summary     = "High latency for {{ $labels.instance }} ({{ $labels.job }})"
+      description = "Average latency for {{ $labels.instance }} ({{ $labels.job }}) is above 1 second (currently {{ $value }}s)."
+    }
+
+    labels = {
+      severity = "warning"
+      team     = "platform"
+    }
+  }
+
+  # Step 4: High Error Rate Alert - fires when error rate is above 10%
+  rule {
+    name      = "High Error Rate - Above 10%"
+    condition = "C"
+
+    data {
+      ref_id = "A"
+      relative_time_range {
+        from = 600
+        to   = 0
+      }
+      datasource_uid = data.grafana_data_source.prometheus.uid
+      model = jsonencode({
+        expr          = <<-EOT
           1 - (
             sum by (instance, job) (rate(probe_all_success_sum{}[10m]))
             /
             sum by (instance, job) (rate(probe_all_success_count{}[10m]))
           )
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -241,15 +241,15 @@ labels = {
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
       summary     = "High error rate for {{ $labels.instance }} ({{ $labels.job }})"
       description = "Error rate for {{ $labels.instance }} ({{ $labels.job }}) is above 10% (currently {{ $value | humanizePercentage }})."
     }
-    
+
     labels = {
       severity = "warning"
       team     = "platform"
@@ -260,7 +260,7 @@ labels = {
   rule {
     name      = "High Error Rate by Probe - Above 50%"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
@@ -269,15 +269,15 @@ labels = {
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
+        expr          = <<-EOT
           1 - (
             sum by (instance, job, probe) (rate(probe_all_success_sum{}[10m]))
             /
             sum by (instance, job, probe) (rate(probe_all_success_count{}[10m]))
           )
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -304,15 +304,15 @@ labels = {
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
       summary     = "High error rate on probe {{ $labels.probe }} for {{ $labels.instance }} ({{ $labels.job }})"
       description = "Error rate on probe {{ $labels.probe }} for {{ $labels.instance }} ({{ $labels.job }}) is above 50% (currently {{ $value | humanizePercentage }})."
     }
-    
+
     labels = {
       severity = "warning"
       team     = "platform"
@@ -337,7 +337,7 @@ resource "grafana_notification_policy" "synthetic_monitoring" {
 
   policy {
     matcher {
-      label = "team"  
+      label = "team"
       match = "="
       value = "platform"
     }
