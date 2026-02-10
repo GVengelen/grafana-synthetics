@@ -69,7 +69,7 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
     exec_err_state = "Alerting"
 
     annotations = {
-      summary     = "check success below 95%"
+      summary     = "check success below 100%"
       description = "check job {{ $labels.job }} instance {{ $labels.instance }} has a success rate of {{ printf \"%.1f\" $value }}%."
     }
 
