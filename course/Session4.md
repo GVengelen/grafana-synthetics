@@ -1,9 +1,11 @@
 # Session 4: Alerting and Performance Monitoring (90 minutes)
 
 ## Introduction
+
 In this session, we'll build upon our synthetic monitoring infrastructure by adding alerts. At the end of this session, you'll have a complete alerting system that notifies you when your services experience issues, allowing for proactive monitoring and rapid incident response.
 
 ### Why Synthetic Monitoring Alerts Matter
+
 Alerting is the important, without proper alerts:
 
 - **Silent Failures**: Issues can go unnoticed until customers report them
@@ -13,6 +15,7 @@ Alerting is the important, without proper alerts:
 - **Alert Fatigue**: Too many false positives reduce team responsiveness
 
 With automated synthetic monitoring alerts:
+
 - **Proactive Detection**: Know about issues before customers do
 - **Contextual Information**: Rich metadata helps with faster troubleshooting
 - **Consistent Standards**: Everyone gets the same alerts based on the same criteria
@@ -22,6 +25,7 @@ With automated synthetic monitoring alerts:
 ## Understanding Grafana Alerting Architecture
 
 ### Key Components
+
 Grafana's unified alerting system consists of several key components:
 
 1. **Alert Rules**: Define the conditions that trigger alerts
@@ -32,7 +36,9 @@ Grafana's unified alerting system consists of several key components:
 6. **Silences**: Temporarily mute alerts during maintenance or known issues
 
 ### Alert Rule Anatomy
+
 Each alert rule contains:
+
 - **Query**: The metric query that provides data
 - **Condition**: The threshold or condition that triggers the alert
 - **Evaluation**: How often to check the condition
@@ -40,24 +46,29 @@ Each alert rule contains:
 - **Labels**: Metadata used for routing and grouping
 
 ## Core Synthetic Monitoring Metrics
+
 Before we create our alerts, let's understand the key metrics that Grafana Synthetics provides:
 
 ### Success Rate Metrics
+
 - `probe_all_success_sum`: Total number of successful probes
 - `probe_all_success_count`: Total number of probe attempts
 - **Usage**: Calculate availability percentage and error rates
 
-### Duration Metrics  
+### Duration Metrics
+
 - `probe_all_duration_seconds_sum`: Total time spent on all probes
 - `probe_all_duration_seconds_count`: Number of probe duration measurements
 - **Usage**: Calculate average response times and latency
 
 ### HTTP-Specific Metrics
+
 - `probe_http_status_code`: HTTP response codes
 - `probe_http_duration_seconds`: HTTP-specific timing metrics
 - **Usage**: Monitor specific HTTP behaviors
 
 ### Labels Available
+
 - `instance`: The target being monitored
 - `job`: The job name from your synthetic check
 - `probe`: The geographic location running the check
@@ -91,23 +102,22 @@ data "grafana_data_source" "prometheus" {
 
 **Important**: Replace `your-prometheus-datasource` with your actual Prometheus data source name. You can find this in your Grafana Cloud instance under Configuration → Data Sources.
 
-### Step 2: Creating Your First Alert - Target Down Detection
+### Step 2: Creating Your First Alert - Check Failure at Low Sensitivity
 
-Let's start with the most critical alert: detecting when a target is completely down. This alert will fire when all probes are failing for a target.
+Let's start with the first alert: detecting when a synthetic check's success rate drops below 100%. This is a low-sensitivity alert that catches any degradation in check reliability.
 
 Add the following to your `alerts.tf` file:
 
 ```terraform
-# Step 1: Target Down Alert - fires when a target is down across all probes
 resource "grafana_rule_group" "synthetic_monitoring_alerts" {
   name             = "Synthetic Monitoring Alerts"
   folder_uid       = grafana_folder.synthetic_monitoring_alerts.uid
   interval_seconds = 60
 
   rule {
-    name      = "Target Down - All Probes Failing"
+    name      = "SyntheticMonitoringCheckFailureAtLowSensitivity"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
@@ -116,13 +126,11 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
-          sum by (instance, job) (rate(probe_all_success_sum{}[10m]))
-          /
-          sum by (instance, job) (rate(probe_all_success_count{}[10m]))
+        expr          = <<-EOT
+          avg by(instance, job, severity) (probe_check_success_rate)
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -135,17 +143,19 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId = "C"
+        type  = "classic_conditions"
         conditions = [
           {
             evaluator = {
-              params = [0]
-              type   = "eq"
+              params = [1]
+              type   = "lt"
             }
             operator = {
               type = "and"
             }
             query = {
-              model = ""
+              model  = ""
               params = ["A"]
             }
             reducer = {
@@ -155,23 +165,20 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
             type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
-      summary     = "Target {{ $labels.instance }} ({{ $labels.job }}) is down - all probes failing"
-      description = "The target {{ $labels.instance }} for job {{ $labels.job }} has been unreachable from all probes for more than 5 minutes."
+      summary     = "check success below 100%"
+      description = "check job {{ $labels.job }} instance {{ $labels.instance }} has a success rate of {{ printf \"%.1f\" $value }}%."
     }
-    
+
     labels = {
-      severity = "critical"
-      team     = "platform"
+      namespace = "synthetic_monitoring"
     }
   }
 }
@@ -179,44 +186,41 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
 
 Let's break down what this alert does:
 
-| Component | Purpose | Details |
-|-----------|---------|---------|
-| `rule_group` | Container for related alert rules | Groups rules that should be evaluated together |
-| `name` | Human-readable identifier | Shows up in Grafana UI and notifications |
-| `condition` | References the data query that triggers | "C" refers to our condition query |
-| `data` block A | Main metric query | Calculates success rate over 10 minutes |
-| `data` block C | Condition evaluation | Triggers when success rate equals 0 (completely down) |
-| `for` | Sustained duration | Alert only fires after condition is true for 5 minutes |
-| `annotations` | Context for humans | Summary and description appear in notifications |
-| `labels` | Metadata for routing | Used by notification policies to route alerts |
+| Component      | Purpose                                 | Details                                                                 |
+| -------------- | --------------------------------------- | ----------------------------------------------------------------------- |
+| `rule_group`   | Container for related alert rules       | Groups rules that are evaluated together at a 60s interval              |
+| `name`         | Human-readable identifier               | Shows up in Grafana UI and notifications                                |
+| `condition`    | References the data query that triggers | "C" refers to our classic condition query                               |
+| `data` block A | Main metric query                       | Uses `probe_check_success_rate` averaged by instance, job, and severity |
+| `data` block C | Condition evaluation                    | Triggers when success rate falls below 1 (i.e., below 100%)             |
+| `for`          | Sustained duration                      | Alert only fires after condition is true for 5 minutes                  |
+| `annotations`  | Context for humans                      | Summary and description appear in notifications                         |
+| `labels`       | Metadata for routing                    | Uses `namespace` for grouping alerts                                    |
 
-The PromQL query `sum by (instance, job) (rate(probe_all_success_sum{}[10m])) / sum by (instance, job) (rate(probe_all_success_count{}[10m]))` calculates the success rate by dividing successful probes by total probe attempts over a 10-minute window.
+The PromQL query `avg by(instance, job, severity) (probe_check_success_rate)` uses the pre-computed `probe_check_success_rate` metric, which is a convenient metric provided by Grafana Synthetic Monitoring. It fires when the success rate drops below 100%, making it a good early warning indicator.
 
-### Step 3: Adding a Reachability Alert
+### Step 3: Adding a Synthetic Check Failing Alert
 
-Now let's add an alert for when reachability drops below acceptable levels, but isn't completely down:
+Now let's add a more urgent alert that fires when a synthetic check is actively failing. This uses the raw `probe_success` metric averaged over 5 minutes:
 
 ```terraform
-  # Step 2: Reachability Alert - fires when reachability drops below 90%
   rule {
-    name      = "Low Reachability - Below 90%"
+    name      = "SyntheticCheckFailing"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
-        from = 600
+        from = 300
         to   = 0
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
-          sum by (instance, job) (rate(probe_all_success_sum{}[10m]))
-          /
-          sum by (instance, job) (rate(probe_all_success_count{}[10m]))
+        expr          = <<-EOT
+          avg_over_time(probe_success[5m])
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -229,17 +233,19 @@ Now let's add an alert for when reachability drops below acceptable levels, but 
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId = "C"
+        type  = "classic_conditions"
         conditions = [
           {
             evaluator = {
-              params = [0.9]
+              params = [1]
               type   = "lt"
             }
             operator = {
               type = "and"
             }
             query = {
-              model = ""
+              model  = ""
               params = ["A"]
             }
             reducer = {
@@ -249,54 +255,54 @@ Now let's add an alert for when reachability drops below acceptable levels, but 
             type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "2m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
-      summary     = "Low reachability for {{ $labels.instance }} ({{ $labels.job }})"
-      description = "Reachability for {{ $labels.instance }} ({{ $labels.job }}) has dropped below 90% (currently {{ $value | humanizePercentage }})."
+      summary     = "synthetic check failing"
+      description = "check job {{ $labels.job }} instance {{ $labels.instance }} returned failure over the last five minutes."
     }
-    
+
     labels = {
-      severity = "warning"
-      team     = "platform"
+      namespace = "synthetic_monitoring"
+      severity  = "critical"
     }
   }
 ```
 
-This alert uses the same success rate query but triggers when the value is less than 0.9 (90%). Note the `severity = "warning"` label - this is less critical than a complete outage.
+This alert differs from the first one in important ways:
 
-### Step 4: Performance Monitoring - High Latency Alert
+- It uses `avg_over_time(probe_success[5m])` instead of `probe_check_success_rate`, giving a direct 5-minute average of the raw probe success metric (1 = success, 0 = failure)
+- It has a shorter `for` duration of **2 minutes** (vs 5 minutes), making it fire faster
+- It is labeled with `severity = "critical"` because a consistently failing check is a more urgent situation
+- The time range is 300 seconds (5 minutes) instead of 600 seconds
 
-Performance matters as much as availability. Let's add an alert for high latency:
+### Step 4: High Latency Alert
+
+Performance matters as much as availability. Let's add an alert for high latency on non-browser checks:
 
 ```terraform
-  # Step 3: High Latency Alert - fires when average latency goes above 1 second
   rule {
-    name      = "High Latency - Above 1 Second"
+    name      = "HighSyntheticCheckLatency"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
-        from = 600
+        from = 300
         to   = 0
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
-          sum by (instance, job) (rate(probe_all_duration_seconds_sum{}[10m]))
-          /
-          sum by (instance, job) (rate(probe_all_duration_seconds_count{}[10m]))
+        expr          = <<-EOT
+          avg_over_time(probe_duration_seconds{check_type!="browser"}[5m])
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -309,17 +315,19 @@ Performance matters as much as availability. Let's add an alert for high latency
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId = "C"
+        type  = "classic_conditions"
         conditions = [
           {
             evaluator = {
-              params = [1]
+              params = [5]
               type   = "gt"
             }
             operator = {
               type = "and"
             }
             query = {
-              model = ""
+              model  = ""
               params = ["A"]
             }
             reducer = {
@@ -329,56 +337,54 @@ Performance matters as much as availability. Let's add an alert for high latency
             type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
-      summary     = "High latency for {{ $labels.instance }} ({{ $labels.job }})"
-      description = "Average latency for {{ $labels.instance }} ({{ $labels.job }}) is above 1 second (currently {{ $value }}s)."
+      summary     = "synthetic check latency high"
+      description = "check job {{ $labels.job }} instance {{ $labels.instance }} latency {{ printf \"%.2f\" $value }}s exceeds 5s threshold."
     }
-    
+
     labels = {
-      severity = "warning"
-      team     = "platform"
+      namespace = "synthetic_monitoring"
+      severity  = "warning"
     }
   }
 ```
 
-This alert uses duration metrics (`probe_all_duration_seconds_sum` and `probe_all_duration_seconds_count`) to calculate average response time. It triggers when the average exceeds 1 second.
+Key points about this alert:
 
-### Step 5: Error Rate Monitoring
+- The query uses `avg_over_time(probe_duration_seconds{check_type!="browser"}[5m])` to calculate the average probe duration over 5 minutes
+- The filter `check_type!="browser"` **excludes browser checks**, since those naturally take longer to execute and would create false positives
+- The threshold is **5 seconds** — if the average latency exceeds this, the alert fires
+- It is labeled `severity = "warning"` since high latency is not as urgent as a complete failure
 
-Let's add an alert for monitoring overall error rates:
+### Step 5: Multiple Checks Failing Simultaneously
+
+When multiple checks fail at the same time, it often indicates a broader infrastructure issue rather than a single service problem. Let's add an alert for this:
 
 ```terraform
-  # Step 4: High Error Rate Alert - fires when error rate is above 10%
   rule {
-    name      = "High Error Rate - Above 10%"
+    name      = "MultipleSyntheticChecksFailing"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
-        from = 600
+        from = 300
         to   = 0
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
-          1 - (
-            sum by (instance, job) (rate(probe_all_success_sum{}[10m]))
-            /
-            sum by (instance, job) (rate(probe_all_success_count{}[10m]))
-          )
+        expr          = <<-EOT
+          sum(probe_success == 0)
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -391,17 +397,19 @@ Let's add an alert for monitoring overall error rates:
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId = "C"
+        type  = "classic_conditions"
         conditions = [
           {
             evaluator = {
-              params = [0.1]
+              params = [3]
               type   = "gt"
             }
             operator = {
               type = "and"
             }
             query = {
-              model = ""
+              model  = ""
               params = ["A"]
             }
             reducer = {
@@ -411,56 +419,54 @@ Let's add an alert for monitoring overall error rates:
             type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "3m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
-      summary     = "High error rate for {{ $labels.instance }} ({{ $labels.job }})"
-      description = "Error rate for {{ $labels.instance }} ({{ $labels.job }}) is above 10% (currently {{ $value | humanizePercentage }})."
+      summary     = "multiple synthetic checks failing"
+      description = "{{ printf \"%.0f\" $value }} synthetic checks are failing simultaneously."
     }
-    
+
     labels = {
-      severity = "warning"
-      team     = "platform"
+      namespace = "synthetic_monitoring"
+      severity  = "critical"
     }
   }
 ```
 
-This query calculates error rate by subtracting the success rate from 1 (`1 - success_rate = error_rate`). It triggers when errors exceed 10%.
+This alert takes a different approach from the previous ones:
 
-### Step 6: Geographic-Specific Monitoring
+- Instead of looking at individual checks, `sum(probe_success == 0)` counts the **total number of checks** where `probe_success` equals 0 (i.e., the check is currently failing)
+- The threshold is **greater than 3** — meaning more than 3 checks must be failing simultaneously
+- The `for` duration is **3 minutes**, a balance between reacting quickly and avoiding false positives from brief network blips
+- It's marked `severity = "critical"` because multiple simultaneous failures likely indicate a systemic issue
 
-Sometimes a specific geographic location may have issues while others work fine. Let's add probe-specific monitoring:
+### Step 6: HTTP 5xx Error Detection
+
+Server-side errors (HTTP 500+) indicate application-level problems. Let's add an alert that catches these:
 
 ```terraform
-  # Step 5: High Error Rate by Probe Alert - fires when error rate on a specific probe is above 50%
   rule {
-    name      = "High Error Rate by Probe - Above 50%"
+    name      = "SyntheticCheckHttp5xxErrors"
     condition = "C"
-    
+
     data {
       ref_id = "A"
       relative_time_range {
-        from = 600
+        from = 300
         to   = 0
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
-        expr = <<-EOT
-          1 - (
-            sum by (instance, job, probe) (rate(probe_all_success_sum{}[10m]))
-            /
-            sum by (instance, job, probe) (rate(probe_all_success_count{}[10m]))
-          )
+        expr          = <<-EOT
+          max_over_time(probe_http_status_code[5m])
         EOT
-        refId      = "A"
-        intervalMs = 1000
+        refId         = "A"
+        intervalMs    = 1000
         maxDataPoints = 43200
       })
     }
@@ -473,17 +479,19 @@ Sometimes a specific geographic location may have issues while others work fine.
       }
       datasource_uid = "__expr__"
       model = jsonencode({
+        refId = "C"
+        type  = "classic_conditions"
         conditions = [
           {
             evaluator = {
-              params = [0.5]
-              type   = "gt"
+              params = [500]
+              type   = "gte"
             }
             operator = {
               type = "and"
             }
             query = {
-              model = ""
+              model  = ""
               params = ["A"]
             }
             reducer = {
@@ -493,30 +501,34 @@ Sometimes a specific geographic location may have issues while others work fine.
             type = "query"
           }
         ]
-        refId = "C"
-        type  = "classic_conditions"
       })
     }
 
-    for    = "5m"
-    no_data_state   = "NoData"
-    exec_err_state  = "Alerting"
-    
+    for            = "1m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
     annotations = {
-      summary     = "High error rate on probe {{ $labels.probe }} for {{ $labels.instance }} ({{ $labels.job }})"
-      description = "Error rate on probe {{ $labels.probe }} for {{ $labels.instance }} ({{ $labels.job }}) is above 50% (currently {{ $value | humanizePercentage }})."
+      summary     = "synthetic check http 5xx"
+      description = "check job {{ $labels.job }} instance {{ $labels.instance }} returned HTTP status {{ printf \"%.0f\" $value }}."
     }
-    
+
     labels = {
-      severity = "warning"
-      team     = "platform"
-      probe    = "{{ $labels.probe }}"
+      namespace = "synthetic_monitoring"
+      severity  = "critical"
     }
   }
 }
 ```
 
-This alert includes the `probe` dimension in the query (`sum by (instance, job, probe)`), allowing us to detect issues specific to geographic locations.
+This alert specifically targets HTTP server errors:
+
+- `max_over_time(probe_http_status_code[5m])` takes the **maximum** HTTP status code observed over the last 5 minutes — using `max` ensures we don't miss intermittent 5xx errors that average out
+- The condition `gte 500` triggers on any HTTP status code of 500 or higher (500 Internal Server Error, 502 Bad Gateway, 503 Service Unavailable, etc.)
+- The `for` duration is only **1 minute** — 5xx errors are almost always serious and should be alerted on quickly
+- It is `severity = "critical"` since server errors directly impact users
+
+> **Note**: Don't forget to close the `grafana_rule_group` block with `}` after this last rule. All five rules should be nested inside the same `resource "grafana_rule_group"` block.
 
 ### Step 7: Creating an Alert Folder
 
@@ -536,16 +548,16 @@ This folder will contain all our synthetic monitoring alerts, making them easy t
 Alerts are useless if nobody receives them. Let's create a contact point for notifications:
 
 ```terraform
-# Step 7: Contact point for synthetic monitoring alerts
+# Step 8: Contact point for synthetic monitoring alerts
 resource "grafana_contact_point" "synthetic_monitoring_alerts" {
   name = "synthetic-monitoring-alerts"
 
   email {
-    addresses = ["your-email@example.com"]
+    addresses = ["<your email address>"]
     subject   = "Grafana Synthetic Monitoring Alert"
     message   = <<-EOT
       Alert: {{ .GroupLabels.alertname }}
-      
+
       {{ range .Alerts }}
       Summary: {{ .Annotations.summary }}
       Description: {{ .Annotations.description }}
@@ -556,19 +568,20 @@ resource "grafana_contact_point" "synthetic_monitoring_alerts" {
 }
 ```
 
-**Important**: Replace `your-email@example.com` with your actual email address.
+**Important**: Replace `<your email address>` with your actual email address.
 
 The message template uses Grafana's template language to include:
+
 - Alert name
 - Summary and description from annotations
 - All labels for context
 
 ### Step 9: Creating Notification Policies
 
-Contact points define *how* to send alerts, but notification policies define *when* and *to whom*. Let's set up routing:
+Contact points define _how_ to send alerts, but notification policies define _when_ and _to whom_. Let's set up routing:
 
 ```terraform
-# Step 8: Create a notification policy for these alerts
+# Step 9: Create a notification policy for these alerts
 resource "grafana_notification_policy" "synthetic_monitoring" {
   group_by      = ["alertname", "grafana_folder"]
   contact_point = grafana_contact_point.synthetic_monitoring_alerts.name
@@ -579,7 +592,7 @@ resource "grafana_notification_policy" "synthetic_monitoring" {
 
   policy {
     matcher {
-      label = "team"  
+      label = "team"
       match = "="
       value = "platform"
     }
@@ -592,6 +605,7 @@ resource "grafana_notification_policy" "synthetic_monitoring" {
 ```
 
 This policy:
+
 - **Groups alerts** by alert name and folder to reduce notification spam
 - **Waits 10 seconds** before sending initial notifications (allows multiple alerts to group)
 - **Groups similar alerts** for 5 minutes before sending additional notifications
@@ -599,9 +613,11 @@ This policy:
 - **Routes team=platform alerts** to our contact point with more frequent repeats (4 hours)
 
 ### Step 10: Deploying Your Alerting System
+
 Before we can deploy our new alerts, we'll need to update the rights of our Service Account. We'll be creating `folders` and `alerts`, so add those roles and click update in Grafana cloud.
 
 You can find this option under `/org/serviceaccounts`, on this page:
+
 1. Look for `synthetic-acces-policy`
 2. Add `Alerting Admin` role
 3. Add `Folder Admin` role
@@ -626,6 +642,7 @@ terraform plan -var-file="../envs/dev/secrets.auto.tfvars"
 ```
 
 Review the planned changes. You should see something like this:
+
 - 1 data source to be read
 - 1 rule group with 5 alert rules
 - 1 folder for organization
@@ -639,12 +656,14 @@ If everything looks correct, apply the changes by merging our changes to main.
 Once deployed, you can test your alerts in several ways:
 
 #### Method 1: Using Grafana UI
+
 1. Navigate to your Grafana Cloud instance
 2. Go to Alerting → Alert Rules
 3. Find your "Synthetic Monitoring Alerts" folder
 4. Click on any rule to see its current state and evaluation history
 
 #### Method 2: Temporarily Breaking a Check
+
 You can temporarily modify one of your synthetic checks to point to a non-existent endpoint:
 
 ```bash
@@ -653,11 +672,13 @@ cp main.tf main.tf.backup
 
 
 ```
+
 Edit main.tf to change a target URL to something that will fail. For example, change your HTTP check target to "https://this-will-fail.example.com". Deploy the change and wait for alerts to fire, then restore your backup.
 
 ## Understanding Alert States and Lifecycle
 
 ### Alert States
+
 Grafana alerts can be in several states:
 
 - **Normal**: Condition is false, no alert
@@ -667,6 +688,7 @@ Grafana alerts can be in several states:
 - **Error**: Query execution failed
 
 ### Alert Lifecycle
+
 1. **Evaluation**: Grafana runs queries according to the rule group interval
 2. **Condition Check**: Results are compared against thresholds
 3. **State Transition**: Alert state changes based on results
@@ -676,16 +698,19 @@ Grafana alerts can be in several states:
 ### Best Practices for Alert Configuration
 
 #### Choosing Thresholds
+
 - **Start Conservative**: Begin with loose thresholds and tighten based on data
 - **Consider Baselines**: Use historical data to understand normal patterns
 - **Separate Critical vs non-criticals**: Use different thresholds for different severities
 
 #### Setting Evaluation Intervals
+
 - **Balance Responsiveness vs Load**: More frequent evaluation catches issues faster but uses more resources
 - **Match Your SLAs**: If you have a 5-minute SLA, don't evaluate every 30 seconds
 - **Consider Data Granularity**: Don't evaluate faster than your metric collection interval
 
 #### Structuring Notification Policies
+
 - **Route by Severity**: Critical alerts should wake people up; warnings can wait
 - **Group Related Alerts**: Avoid spam by grouping related alerts
 - **Time-Based Routing**: Different contacts for business hours vs off-hours
@@ -693,11 +718,13 @@ Grafana alerts can be in several states:
 ## Further Reading and Resources
 
 ### Grafana Documentation
+
 - [Grafana Unified Alerting](https://grafana.com/docs/grafana/latest/alerting/)
 - [PromQL Documentation](https://prometheus.io/docs/prometheus/latest/querying/basics/)
 - [Alert Notification Templates](https://grafana.com/docs/grafana/latest/alerting/manage-notifications/template-notifications/)
 
 ### Best Practices
+
 - [Site Reliability Engineering Book](https://sre.google/sre-book/monitoring-distributed-systems/)
 - [Synthetic Monitoring Best Practices](https://grafana.com/blog/2022/03/10/best-practices-for-alerting-on-synthetic-monitoring-metrics-in-grafana-cloud/)
 - [Alert Fatigue Prevention](https://grafana.com/blog/2024/05/14/grafana-alerting-new-tools-to-resolve-incidents-faster-and-avoid-alert-fatigue/)
