@@ -410,7 +410,7 @@ Now we start the actual test steps by navigating to the login page:
 
 ```javascript
 // STEP 1: Navigate to login page
-await page.goto("https://quickpizza.grafana.com//my_messages.php");
+await page.goto("https://quickpizza.grafana.com/my_messages.php");
 ```
 
 This simulates a user typing a URL into their browser and navigating to the page. The `await` keyword is important here because we need to wait for the page to load before proceeding.
@@ -512,7 +512,7 @@ export default async function () {
 
   try {
     // STEP 1: Navigate to login page
-    await page.goto("https://quickpizza.grafana.com//my_messages.php");
+    await page.goto("https://quickpizza.grafana.com/my_messages.php");
 
     // STEP 2: Fill login form
     await page.locator('input[name="login"]').type("admin");

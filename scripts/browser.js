@@ -23,7 +23,7 @@ export default async function () {
   const page = await context.newPage();
 
   try {
-    await page.goto("https://quickpizza.grafana.com//my_messages.php");
+    await page.goto("https://quickpizza.grafana.com/my_messages.php");
 
     await page.locator('input[name="login"]').type("admin");
     await page.locator('input[name="password"]').type("123");
