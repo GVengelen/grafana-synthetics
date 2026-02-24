@@ -102,106 +102,11 @@ data "grafana_data_source" "prometheus" {
 
 **Important**: Replace `your-prometheus-datasource` with your actual Prometheus data source name. You can find this in your Grafana Cloud instance under Configuration → Data Sources.
 
-### Step 2: Creating Your First Alert - Check Failure at Low Sensitivity
+### Step 2: Synthetic Check — Failing (success rate below 100%)
 
-Let's start with the first alert: detecting when a synthetic check's success rate drops below 100%. This is a low-sensitivity alert that catches any degradation in check reliability.
+This alert detects when a synthetic check's overall success rate drops to less than 100% for a sustained period. The rule queries the pre-computed `probe_check_success_rate` and triggers when the last value is below `1` in other words, not 100% succesful.
 
-Add the following to your `alerts.tf` file:
-
-```terraform
-resource "grafana_rule_group" "synthetic_monitoring_alerts" {
-  name             = "Synthetic Monitoring Alerts"
-  folder_uid       = grafana_folder.synthetic_monitoring_alerts.uid
-  interval_seconds = 60
-
-  rule {
-    name      = "SyntheticMonitoringCheckFailureAtLowSensitivity"
-    condition = "C"
-
-    data {
-      ref_id = "A"
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      datasource_uid = data.grafana_data_source.prometheus.uid
-      model = jsonencode({
-        expr          = <<-EOT
-          avg by(instance, job, severity) (probe_check_success_rate)
-        EOT
-        refId         = "A"
-        intervalMs    = 1000
-        maxDataPoints = 43200
-      })
-    }
-
-    data {
-      ref_id = "C"
-      relative_time_range {
-        from = 0
-        to   = 0
-      }
-      datasource_uid = "__expr__"
-      model = jsonencode({
-        refId = "C"
-        type  = "classic_conditions"
-        conditions = [
-          {
-            evaluator = {
-              params = [1]
-              type   = "lt"
-            }
-            operator = {
-              type = "and"
-            }
-            query = {
-              model  = ""
-              params = ["A"]
-            }
-            reducer = {
-              params = []
-              type   = "last"
-            }
-            type = "query"
-          }
-        ]
-      })
-    }
-
-    for            = "5m"
-    no_data_state  = "NoData"
-    exec_err_state = "Alerting"
-
-    annotations = {
-      summary     = "check success below 100%"
-      description = "check job {{ $labels.job }} instance {{ $labels.instance }} has a success rate of {{ printf \"%.1f\" $value }}%."
-    }
-
-    labels = {
-      namespace = "synthetic_monitoring"
-    }
-  }
-}
-```
-
-Let's break down what this alert does:
-
-| Component      | Purpose                                 | Details                                                                 |
-| -------------- | --------------------------------------- | ----------------------------------------------------------------------- |
-| `rule_group`   | Container for related alert rules       | Groups rules that are evaluated together at a 60s interval              |
-| `name`         | Human-readable identifier               | Shows up in Grafana UI and notifications                                |
-| `condition`    | References the data query that triggers | "C" refers to our classic condition query                               |
-| `data` block A | Main metric query                       | Uses `probe_check_success_rate` averaged by instance, job, and severity |
-| `data` block C | Condition evaluation                    | Triggers when success rate falls below 1 (i.e., below 100%)             |
-| `for`          | Sustained duration                      | Alert only fires after condition is true for 5 minutes                  |
-| `annotations`  | Context for humans                      | Summary and description appear in notifications                         |
-| `labels`       | Metadata for routing                    | Uses `namespace` for grouping alerts                                    |
-
-The PromQL query `avg by(instance, job, severity) (probe_check_success_rate)` uses the pre-computed `probe_check_success_rate` metric, which is a convenient metric provided by Grafana Synthetic Monitoring. It fires when the success rate drops below 100%, making it a good early warning indicator.
-
-### Step 3: Adding a Synthetic Check Failing Alert
-
-Now let's add a more urgent alert that fires when a synthetic check is actively failing. This uses the raw `probe_success` metric averaged over 5 minutes:
+Add the following rule to your `alerts.tf` file (name: `SyntheticCheckFailing`):
 
 ```terraform
   rule {
@@ -211,13 +116,13 @@ Now let's add a more urgent alert that fires when a synthetic check is actively 
     data {
       ref_id = "A"
       relative_time_range {
-        from = 300
+        from = 120
         to   = 0
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
         expr          = <<-EOT
-          avg_over_time(probe_success[5m])
+          avg by(instance, job) (probe_check_success_rate)
         EOT
         refId         = "A"
         intervalMs    = 1000
@@ -264,7 +169,7 @@ Now let's add a more urgent alert that fires when a synthetic check is actively 
 
     annotations = {
       summary     = "synthetic check failing"
-      description = "check job {{ $labels.job }} instance {{ $labels.instance }} returned failure over the last five minutes."
+      description = "check job {{ $labels.job }} instance {{ $labels.instance }} has a success rate below 100%."
     }
 
     labels = {
@@ -274,12 +179,96 @@ Now let's add a more urgent alert that fires when a synthetic check is actively 
   }
 ```
 
-This alert differs from the first one in important ways:
+Key points:
 
-- It uses `avg_over_time(probe_success[5m])` instead of `probe_check_success_rate`, giving a direct 5-minute average of the raw probe success metric (1 = success, 0 = failure)
-- It has a shorter `for` duration of **2 minutes** (vs 5 minutes), making it fire faster
-- It is labeled with `severity = "critical"` because a consistently failing check is a more urgent situation
-- The time range is 300 seconds (5 minutes) instead of 600 seconds
+- **Metric**: `probe_check_success_rate` (pre-computed success rate)
+- **Window**: 120s (relative time range)
+- **Condition**: last value < 1 (any drop below 100%)
+- **For**: 2 minutes (reduces false positives from brief blips)
+- **Severity**: `critical`
+
+### Step 3: Synthetic Check — Degraded (success rate below 90%)
+
+A separate, lower-severity alert detects when a check's success rate falls below 90% (but not fully failing). This helps catch degradation before a total outage.
+
+Add the following rule to your `alerts.tf` file (name: `SyntheticCheckDegraded`):
+
+```terraform
+  rule {
+    name      = "SyntheticCheckDegraded"
+    condition = "C"
+
+    data {
+      ref_id = "A"
+      relative_time_range {
+        from = 300
+        to   = 0
+      }
+      datasource_uid = data.grafana_data_source.prometheus.uid
+      model = jsonencode({
+        expr          = <<-EOT
+          avg by(instance, job) (probe_check_success_rate)
+        EOT
+        refId         = "A"
+        intervalMs    = 1000
+        maxDataPoints = 43200
+      })
+    }
+
+    data {
+      ref_id = "C"
+      relative_time_range {
+        from = 0
+        to   = 0
+      }
+      datasource_uid = "__expr__"
+      model = jsonencode({
+        refId = "C"
+        type  = "classic_conditions"
+        conditions = [
+          {
+            evaluator = {
+              params = [0.9]
+              type   = "lt"
+            }
+            operator = {
+              type = "and"
+            }
+            query = {
+              model  = ""
+              params = ["A"]
+            }
+            reducer = {
+              params = []
+              type   = "last"
+            }
+            type = "query"
+          }
+        ]
+      })
+    }
+
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
+    annotations = {
+      summary     = "synthetic check degraded"
+      description = "check job {{ $labels.job }} instance {{ $labels.instance }} has a success rate below 90%."
+    }
+
+    labels = {
+      namespace = "synthetic_monitoring"
+      severity  = "warning"
+    }
+  }
+```
+
+Key differences vs the failing alert:
+
+- **Threshold**: 0.9 (90%) instead of 1.0 (100%)
+- **Window**: 300s and `for` 5 minutes to reduce noise
+- **Severity**: `warning` to indicate degradation rather than full outage
 
 ### Step 4: High Latency Alert
 
@@ -375,13 +364,13 @@ When multiple checks fail at the same time, it often indicates a broader infrast
     data {
       ref_id = "A"
       relative_time_range {
-        from = 300
+        from = 180
         to   = 0
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
         expr          = <<-EOT
-          sum(probe_success == 0)
+          count(probe_check_success_rate < 1)
         EOT
         refId         = "A"
         intervalMs    = 1000
@@ -402,7 +391,7 @@ When multiple checks fail at the same time, it often indicates a broader infrast
         conditions = [
           {
             evaluator = {
-              params = [3]
+              params = [2]
               type   = "gt"
             }
             operator = {

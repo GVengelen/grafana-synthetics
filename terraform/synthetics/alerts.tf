@@ -10,73 +10,6 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
   folder_uid       = grafana_folder.synthetic_monitoring_alerts.uid
   interval_seconds = 60
 
-  rule {
-    name      = "SyntheticMonitoringCheckFailureAtLowSensitivity"
-    condition = "C"
-
-    data {
-      ref_id = "A"
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      datasource_uid = data.grafana_data_source.prometheus.uid
-      model = jsonencode({
-        expr          = <<-EOT
-          avg by(instance, job, severity) (probe_check_success_rate)
-        EOT
-        refId         = "A"
-        intervalMs    = 1000
-        maxDataPoints = 43200
-      })
-    }
-
-    data {
-      ref_id = "C"
-      relative_time_range {
-        from = 0
-        to   = 0
-      }
-      datasource_uid = "__expr__"
-      model = jsonencode({
-        refId = "C"
-        type  = "classic_conditions"
-        conditions = [
-          {
-            evaluator = {
-              params = [1]
-              type   = "lt"
-            }
-            operator = {
-              type = "and"
-            }
-            query = {
-              model  = ""
-              params = ["A"]
-            }
-            reducer = {
-              params = []
-              type   = "last"
-            }
-            type = "query"
-          }
-        ]
-      })
-    }
-
-    for            = "5m"
-    no_data_state  = "NoData"
-    exec_err_state = "Alerting"
-
-    annotations = {
-      summary     = "check success below 100%"
-      description = "check job {{ $labels.job }} instance {{ $labels.instance }} has a success rate of {{ printf \"%.1f\" $value }}%."
-    }
-
-    labels = {
-      namespace = "synthetic_monitoring"
-    }
-  }
 
   rule {
     name      = "SyntheticCheckFailing"
@@ -85,13 +18,13 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
     data {
       ref_id = "A"
       relative_time_range {
-        from = 300
+        from = 120
         to   = 0
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
         expr          = <<-EOT
-          avg_over_time(probe_success[5m])
+          avg by(instance, job) (probe_check_success_rate)
         EOT
         refId         = "A"
         intervalMs    = 1000
@@ -138,12 +71,80 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
 
     annotations = {
       summary     = "synthetic check failing"
-      description = "check job {{ $labels.job }} instance {{ $labels.instance }} returned failure over the last five minutes."
+      description = "check job {{ $labels.job }} instance {{ $labels.instance }} has a success rate below 100%."
     }
 
     labels = {
       namespace = "synthetic_monitoring"
       severity  = "critical"
+    }
+  }
+  rule {
+    name      = "SyntheticCheckDegraded"
+    condition = "C"
+
+    data {
+      ref_id = "A"
+      relative_time_range {
+        from = 300
+        to   = 0
+      }
+      datasource_uid = data.grafana_data_source.prometheus.uid
+      model = jsonencode({
+        expr          = <<-EOT
+          avg by(instance, job) (probe_check_success_rate)
+        EOT
+        refId         = "A"
+        intervalMs    = 1000
+        maxDataPoints = 43200
+      })
+    }
+
+    data {
+      ref_id = "C"
+      relative_time_range {
+        from = 0
+        to   = 0
+      }
+      datasource_uid = "__expr__"
+      model = jsonencode({
+        refId = "C"
+        type  = "classic_conditions"
+        conditions = [
+          {
+            evaluator = {
+              params = [0.9]
+              type   = "lt"
+            }
+            operator = {
+              type = "and"
+            }
+            query = {
+              model  = ""
+              params = ["A"]
+            }
+            reducer = {
+              params = []
+              type   = "last"
+            }
+            type = "query"
+          }
+        ]
+      })
+    }
+
+    for            = "5m"
+    no_data_state  = "NoData"
+    exec_err_state = "Alerting"
+
+    annotations = {
+      summary     = "synthetic check degraded"
+      description = "check job {{ $labels.job }} instance {{ $labels.instance }} has a success rate below 90%."
+    }
+
+    labels = {
+      namespace = "synthetic_monitoring"
+      severity  = "warning"
     }
   }
 
@@ -223,13 +224,13 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
     data {
       ref_id = "A"
       relative_time_range {
-        from = 300
+        from = 180
         to   = 0
       }
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
         expr          = <<-EOT
-          sum(probe_success == 0)
+          count(probe_check_success_rate < 1)
         EOT
         refId         = "A"
         intervalMs    = 1000
@@ -250,7 +251,7 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
         conditions = [
           {
             evaluator = {
-              params = [3]
+              params = [2]
               type   = "gt"
             }
             operator = {
