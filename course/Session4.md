@@ -299,7 +299,7 @@ Performance matters as much as availability. Let's add an alert for high latency
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
         expr          = <<-EOT
-          avg_over_time(probe_duration_seconds{check_type!="browser"}[5m])
+          avg_over_time(probe_duration_seconds{job!~"Browser:.*"}[5m])
         EOT
         refId         = "A"
         intervalMs    = 1000
@@ -358,9 +358,9 @@ Performance matters as much as availability. Let's add an alert for high latency
 
 Key points about this alert:
 
-- The query uses `avg_over_time(probe_duration_seconds{check_type!="browser"}[5m])` to calculate the average probe duration over 5 minutes
-- The filter `check_type!="browser"` **excludes browser checks**, since those naturally take longer to execute and would create false positives
-- The threshold is **5 seconds** — if the average latency exceeds this, the alert fires
+- The query uses `avg_over_time(probe_duration_seconds{job!~"Browser:.*"}[5m])` to calculate the average probe duration over 5 minutes
+- The filter `job!~"Browser:.*""` excludes browser checks, since those naturally take longer to execute and would create false positives
+- The threshold is 5 seconds, if the average latency exceeds this, the alert fires
 - It is labeled `severity = "warning"` since high latency is not as urgent as a complete failure
 
 ### Step 5: Multiple Checks Failing Simultaneously
