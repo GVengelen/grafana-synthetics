@@ -85,8 +85,6 @@ To automate Grafana Cloud Synthetics deployments, you'll need:
 - API keys with appropriate permissions
 - Service account tokens for CI/CD
 
-SM
-
 ## Setting Up Terraform for Grafana Synthetics
 
 ### What is Terraform?

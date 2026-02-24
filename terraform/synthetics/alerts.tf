@@ -160,7 +160,7 @@ resource "grafana_rule_group" "synthetic_monitoring_alerts" {
       datasource_uid = data.grafana_data_source.prometheus.uid
       model = jsonencode({
         expr          = <<-EOT
-          avg_over_time(probe_duration_seconds{check_type!="browser"}[5m])
+          avg_over_time(probe_duration_seconds{job!~".*Browser:*."}[5m])
         EOT
         refId         = "A"
         intervalMs    = 1000

@@ -47,12 +47,6 @@ The observability gap is the difference between what your monitoring tools can s
      brew install hashicorp/tap/terraform
      ```
    - On Windows/Linux: See [Terraform installation docs](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli).
-5. Configure your environment:
-   - Copy the example secrets file and fill in your Grafana Cloud credentials:
-     ```sh
-     cp terraform/envs/dev/secrets.auto.example.tfvars terraform/envs/dev/secrets.auto.tfvars
-     ```
-   - Edit `terraform/envs/dev/secrets.auto.tfvars` with your Grafana Cloud API key and stack details.
 
 ## Why k6 Over Traditional HTTP Checks?
 

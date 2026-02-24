@@ -1,8 +1,8 @@
 output "synthetic_browser_monitoring_check_id" {
   description = "The ID of the created synthetic monitoring check."
-  value       = grafana_synthetic_monitoring_check.Synthetics_BrowserCheck_login
+  value       = grafana_synthetic_monitoring_check.Browser_Login
 }
 output "synthetic_http_monitoring_check_id" {
   description = "The ID of the created synthetic monitoring check."
-  value       = grafana_synthetic_monitoring_check.Synthetics_HttpCheck_http
+  value       = grafana_synthetic_monitoring_check.Http_GetPizza
 }
