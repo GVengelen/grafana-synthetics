@@ -327,7 +327,7 @@ Give it a try by running:
 docker run --rm -i grafana/k6 run - <scripts/http.js
 ```
 
-![Succes](./images/great_succes.jpg)
+![Succes](https://github.com/GVengelen/grafana-synthetics/blob/main/images/great_succes.jpg)
 
 ## Browser-based User Journey Example (10 minutes)
 
