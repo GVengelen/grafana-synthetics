@@ -16,7 +16,8 @@ Automating your synthetic monitoring deployments offers several key advantages:
 - **Disaster Recovery**: Quickly restore your monitoring setup if needed
 
 And let's be honest, we want to automate everything!
-![Automate everything](https://github.com/GVengelen/grafana-synthetics/blob/main/images/automate.jpg)
+
+[Automate everything](https://github.com/GVengelen/grafana-synthetics/blob/main/images/automate.jpg)
 
 ## Understanding the Deployment Lifecycle
 
