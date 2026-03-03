@@ -297,7 +297,7 @@ sm_access_token       = "<Insert your Synthetic Monitoring access token here>"
 
 #### Creating the Grafana Service token
 
-Service Accounts are the recommended approach for managing external acces by other machines. You can find SA settings under `/org/serviceaccounts`. Once your on this page:
+Service Accounts are the recommended approach for managing external acces by other machines. You can find SA settings under `https://{your-instance-name}.grafana.net/org/serviceaccounts`. Once your on this page:
 
 1. click `Add Service Account` in the top right corner.
 2. Name it `synthetic-acces-policy` and add the `Synthetic Monitoring` role.
@@ -307,7 +307,7 @@ Service Accounts are the recommended approach for managing external acces by oth
 
 #### Creating the SM acces token
 
-1. On Grafana cloud, navigate to `/a/grafana-synthetic-monitoring-app/config`
+1. On Grafana cloud, navigate to `https://{your-instance-name}.grafana.net/a/grafana-synthetic-monitoring-app/config/access-tokens`
 2. Click `Generate Acces Token`
 3. Store the token somewhere save since it cannot be retreived afterwards.
 
