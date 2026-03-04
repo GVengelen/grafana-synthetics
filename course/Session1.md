@@ -127,8 +127,15 @@ Run your test locally using Docker:
 
 **Method 1: Pipe the script to Docker**
 
+On Mac
 ```sh
 docker run --rm -i grafana/k6 run - <scripts/http.js
+```
+
+On Windows
+
+```
+cat scripts/http.js | docker run --rm -i grafana/k6 run -
 ```
 
 **Method 2: Mount the scripts directory**
