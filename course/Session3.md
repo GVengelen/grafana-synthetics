@@ -325,7 +325,7 @@ We'll bee using Terraform Cloud as our backend (as specified in `versions.tf`), 
 2. **Create an Organization**:
 
    - After signing in, you'll be prompted to create an organization
-   - Name it "Grafana_Synthetics_Workshop" to match our configuration (or update the configuration to match your org name)
+   - Name it "Grafana*Synthetics_Workshop*{your_name_or_some_random_string}" to match our configuration (or update the configuration to match your org name)
 
 3. **Create a Workspace**:
 

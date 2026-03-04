@@ -27,7 +27,7 @@ export default async function () {
 
     await page.locator('input[name="login"]').type("admin");
     await page.locator('input[name="password"]').type("123");
-    await sleep(15);
+    await sleep(5);
 
     await Promise.all([
       page.waitForNavigation(),
