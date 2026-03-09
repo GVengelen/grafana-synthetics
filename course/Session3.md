@@ -256,7 +256,7 @@ terraform {
   required_version = ">= 1.1.0"
 
   cloud {
-    organization = "Grafana_Synthetics_Workshop"
+    organization = "{Enter the name you choose at terraform cloud}"
 
     workspaces {
       name = "grafana-synthetics-main"
@@ -289,6 +289,7 @@ cp envs/dev/secrets.auto.example.tfvars envs/dev/secrets.auto.tfvars
 
 ```terraform
 # Local .tfvars file for sensitive values (do not commit to git)
+// todo which roles
 grafana_service_token = "<Insert your Grafana service token here>"
 # create a service account here https://{your-instance-name}.grafana.net/org/serviceaccounts
 sm_access_token       = "<Insert your Synthetic Monitoring access token here>"
@@ -325,7 +326,7 @@ We'll bee using Terraform Cloud as our backend (as specified in `versions.tf`), 
 2. **Create an Organization**:
 
    - After signing in, you'll be prompted to create an organization
-   - Name it "Grafana*Synthetics_Workshop*{your_name_or_some_random_string}" to match our configuration (or update the configuration to match your org name)
+   - Choose a name that you find suiting, you'll need this later.
 
 3. **Create a Workspace**:
 
