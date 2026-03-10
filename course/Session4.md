@@ -100,13 +100,24 @@ data "grafana_data_source" "prometheus" {
 }
 ```
 
+Then we need to create a rule group for our rules to land within.
+
+```terraform
+resource "grafana_rule_group" "synthetic_monitoring_alerts" {
+  name             = "Synthetic Monitoring Alerts"
+  folder_uid       = grafana_folder.synthetic_monitoring_alerts.uid
+  interval_seconds = 60
+
+}
+```
+
 **Important**: Replace `your-prometheus-datasource` with your actual Prometheus data source name. You can find this in your Grafana Cloud instance under Configuration → Data Sources.
 
 ### Step 2: Synthetic Check — Failing (success rate below 100%)
 
 This alert detects when a synthetic check's overall success rate drops to less than 100% for a sustained period. The rule queries the pre-computed `probe_check_success_rate` and triggers when the last value is below `1` in other words, not 100% succesful.
 
-Add the following rule to your `alerts.tf` file (name: `SyntheticCheckFailing`):
+Withing the rulegroup that we created in step 1, add the following rule to your `alerts.tf` file (name: `SyntheticCheckFailing`):
 
 ```terraform
   rule {
