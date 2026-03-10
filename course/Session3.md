@@ -301,7 +301,7 @@ sm_access_token       = "<Insert your Synthetic Monitoring access token here>"
 Service Accounts are the recommended approach for managing external acces by other machines. You can find SA settings under `https://{your-instance-name}.grafana.net/org/serviceaccounts`. Once your on this page:
 
 1. click `Add Service Account` in the top right corner.
-2. Name it `synthetic-acces-policy` and add the `Synthetic Monitoring` role.
+2. Name it `synthetic-acces-policy` and add the `Admin` role. We do this for this workshop but in production a granular approach is better
 3. Click save
 4. On you SA details page click `Add service account token` and copy the token.
 5. Store the token somewhere save since it cannot be retreived afterwards.
