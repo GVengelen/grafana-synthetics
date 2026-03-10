@@ -334,8 +334,9 @@ We'll bee using Terraform Cloud as our backend (as specified in `versions.tf`), 
    - Select "CLI-driven workflow", connect it to your Github Repo.
    - Name it "grafana-synthetics-main" to match our configuration
 
-4. **Set execution to local** - Navigate to [here]
-   https://app.terraform.io/app/{your_organisation_name}/workspaces/grafana-synthetics-main/settings/general - Select execution mode `Local (custom)` - Click save settings
+4. **Set execution to local**
+
+   - Navigate to https://app.terraform.io/app/{your_organisation_name}/workspaces/grafana-synthetics-main/settings/general - Select execution mode `Local (custom)` - Click save settings
 
 5. **Generate an API Token**:
 
