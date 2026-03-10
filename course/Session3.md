@@ -302,6 +302,12 @@ Service Accounts are the recommended approach for managing external acces by oth
 
 1. click `Add Service Account` in the top right corner.
 2. Name it `synthetic-acces-policy` and add the `Admin` role. We do this for this workshop but in production a granular approach is better
+
+- stacks:read
+- traces: write
+- metrics: write
+- logs: write
+
 3. Click save
 4. On you SA details page click `Add service account token` and copy the token.
 5. Store the token somewhere save since it cannot be retreived afterwards.
