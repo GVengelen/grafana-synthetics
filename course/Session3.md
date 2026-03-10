@@ -136,7 +136,7 @@ provider "grafana" {
 }
 ```
 
-**NOTE**: If you deployed grafana in a different region, you should update the sm_url accordingly. You can find the right url under Testing & Synthetics > Config > Terraform.
+**NOTE**: If you deployed grafana in a different region, you should update the sm_url accordingly. You can find the right url under Testing & Synthetics > Config > Terraform. Or https://{your-instance-name}.grafana.net/a/grafana-synthetic-monitoring-app/config/terraform.
 
 You can create a free account at [grafana](https://grafana.com/auth/sign-up?refCode=gr8LmtwELr8U3Lq). I'm not making any money off this referral code.
 Each user you is eligible for a 14-day trial of Pro and forever-free access to Grafana Cloud.

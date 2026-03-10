@@ -529,6 +529,8 @@ export default async function () {
       header: async (locator) =>
         (await locator.textContent()) == "Welcome, admin!",
     });
+  } catch (error) {
+    fail(`Browser iteration failed: ${error.message}`);
   } finally {
     // Cleanup
     await page.close();
