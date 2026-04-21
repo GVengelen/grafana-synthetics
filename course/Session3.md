@@ -114,6 +114,7 @@ First, let's create a proper directory structure for our Terraform project:
 mkdir -p terraform/synthetics
 cd terraform/synthetics
 ```
+NOTE: This should be done in the root folder where you also have the scripts. These belong in the same project.
 
 Within this directory, we'll create several files:
 
