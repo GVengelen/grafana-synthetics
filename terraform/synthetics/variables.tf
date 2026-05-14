@@ -1,5 +1,5 @@
 variable "grafana_service_token" {
-  description = "Grafana service token"
+  description = "Grafana service Token"
   type        = string
   sensitive   = true
 }
