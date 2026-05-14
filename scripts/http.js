@@ -1,12 +1,16 @@
 import { group, sleep, check } from "k6";
 import http from "k6/http";
 
+
 export default function () {
   let params;
   let resp;
   let url;
 
   group("Default group", function () {
+    // Steps will go here
+
+
     // Step 1: Get the home page
     params = {
       headers: {},
@@ -17,6 +21,7 @@ export default function () {
     resp = http.request("GET", url, null, params);
 
     check(resp, { "status equals 200": (r) => r.status === 200 });
+
 
     // Step 2: Create a pizza
     params = {
@@ -36,6 +41,7 @@ export default function () {
 
     check(resp, { "status equals 200": (r) => r.status === 200 });
 
+
     // Step 3: Rank a pizza
     params = {
       headers: {},
@@ -46,6 +52,10 @@ export default function () {
     resp = http.request("POST", url, `{"pizza_id":24596,"stars":5}`, params);
 
     check(resp, { "status equals 401": (r) => r.status === 401 });
+
+
+
   });
+
   sleep(1);
 }

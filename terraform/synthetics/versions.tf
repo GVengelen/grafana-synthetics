@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 1.1.0"
 
   cloud {
-    organization = "Grafana_Synthetics_Workshop"
+    organization = "mufaxx"
 
     workspaces {
       name = "grafana-synthetics-main"

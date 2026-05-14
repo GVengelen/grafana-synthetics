@@ -1,6 +1,5 @@
 import { browser } from "k6/browser";
 import { check } from "https://jslib.k6.io/k6-utils/1.5.0/index.js";
-import { sleep } from "k6";
 
 export const options = {
   scenarios: {
@@ -23,24 +22,31 @@ export default async function () {
   const page = await context.newPage();
 
   try {
+    
+    // STEP 1: Navigate to login page
     await page.goto("https://quickpizza.grafana.com/my_messages.php");
 
+
+    // STEP 2: Fill login form
     await page.locator('input[name="login"]').type("admin");
     await page.locator('input[name="password"]').type("123");
-    await sleep(5);
 
+
+    // STEP 3: Submit form and wait for navigation
     await Promise.all([
       page.waitForNavigation(),
       page.locator('input[type="submit"]').click(),
     ]);
 
+
+    // STEP 4: Verify successful login
     await check(page.locator("h2"), {
-      header: async (locator) =>
-        (await locator.textContent()) == "Welcome, admin!",
+      header: async (locator) => (await locator.textContent()) == "Welcome, admin!",
     });
-  } catch (error) {
-    fail(`Browser iteration failed: ${error.message}`);
+
+
   } finally {
+    // Cleanup
     await page.close();
   }
 }

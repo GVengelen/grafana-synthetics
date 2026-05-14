@@ -1,13 +1,11 @@
 data "grafana_synthetic_monitoring_probes" "main" {}
 
 resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_login" {
-  job     = "Browser:Login"
-  target  = "login"
-  enabled = true
-  probes  = [data.grafana_synthetic_monitoring_probes.main.probes.London]
-  labels = {
-    check_type = "browser"
-  }
+  job       = "Synthetics:BrowserCheck"
+  target    = "login"
+  enabled   = true
+  probes    = [data.grafana_synthetic_monitoring_probes.main.probes.London]
+  labels    = {}
   frequency = 300000
   timeout   = 60000
   settings {
@@ -15,29 +13,19 @@ resource "grafana_synthetic_monitoring_check" "Synthetics_BrowserCheck_login" {
       script = file("${path.module}/../../scripts/browser.js")
     }
   }
-
-  lifecycle {
-    create_before_destroy = false
-  }
 }
 
-resource "grafana_synthetic_monitoring_check" "Http_GetPizza" {
-  job     = "Http:GetPizza"
-  target  = "http"
-  enabled = true
-  probes  = [data.grafana_synthetic_monitoring_probes.main.probes.Frankfurt, ]
-  labels = {
-    check_type = "http"
-  }
+resource "grafana_synthetic_monitoring_check" "Synthetics_HttpCheck" {
+  job       = "Synthetics:HttpCheck"
+  target    = "http"
+  enabled   = true
+  probes    = [data.grafana_synthetic_monitoring_probes.main.probes.Frankfurt,]
+  labels    = {}
   frequency = 300000
   timeout   = 60000
   settings {
     browser {
       script = file("${path.module}/../../scripts/http.js")
     }
-  }
-
-  lifecycle {
-    create_before_destroy = false
   }
 }

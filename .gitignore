@@ -3,3 +3,5 @@ secrets.auto.tfvars
 terraform/synthetics/.terraform/
 *.tfstate
 *.tfstate.*
+course
+terraform/envs/dev/secrets.auto.example.tfvars
