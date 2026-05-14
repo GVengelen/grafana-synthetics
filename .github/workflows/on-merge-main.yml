@@ -2,17 +2,17 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   validate-scripts:
     runs-on: ubuntu-latest
     name: Validate K6 Scripts
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - uses: grafana/setup-k6-action@v1
         with:
           browser: true
@@ -26,28 +26,28 @@ jobs:
     runs-on: ubuntu-latest
     name: Apply Terraform Changes
     needs: validate-scripts
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~1.5"
           cli_config_credentials_token: ${{ secrets.TF_STATE_TOKEN }}
-          
+
       - name: Terraform Init
         run: terraform init
         working-directory: ./terraform/synthetics
-          
+
       - name: Terraform Plan
         run: terraform plan -no-color -out=tfplan
         working-directory: ./terraform/synthetics
         env:
           TF_VAR_grafana_service_token: ${{ secrets.GRAFANA_SERVICE_TOKEN }}
           TF_VAR_sm_access_token: ${{ secrets.SM_ACCESS_TOKEN }}
-          
+
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
         working-directory: ./terraform/synthetics
