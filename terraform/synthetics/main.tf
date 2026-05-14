@@ -33,7 +33,7 @@ resource "grafana_synthetic_monitoring_check" "Http_GetPizza" {
   timeout   = 60000
   settings {
     browser {
-      script = file("${path.module}/../../scripts/http.js")
+      script = file(abspath("${path.module}/../../scripts/http.js"))
     }
   }
 

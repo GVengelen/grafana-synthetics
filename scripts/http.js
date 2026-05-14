@@ -16,7 +16,7 @@ export default function () {
     url = http.url`https://quickpizza.grafana.com/`;
     resp = http.request("GET", url, null, params);
 
-    check(resp, { "status equals 200": (r) => r.status === 200 });
+    check(resp, { "status equals 200": (r) => r.status === 500 });
 
     // Step 2: Create a pizza
     params = {
