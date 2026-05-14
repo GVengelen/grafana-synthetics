@@ -13,10 +13,10 @@ export default function () {
       cookies: {},
     };
 
-    url = http.url`https://quickpizza.grafana.com/`;
+    url = http.url`https://quickpizza.grafana.comsadasdas/`;
     resp = http.request("GET", url, null, params);
 
-    check(resp, { "status equals 200": (r) => r.status === 500 });
+    check(resp, { "status equals 200": (r) => r.status === 200 });
 
     // Step 2: Create a pizza
     params = {
